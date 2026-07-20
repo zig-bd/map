@@ -1,0 +1,232 @@
+const std = @import("std");
+const zx = @import("zx");
+
+const component = @import("component.zx");
+const map = @import("map.zig");
+
+pub fn Page(ctx: zx.PageContext) zx.Component {
+    return (
+        <main class="map-root" @allocator={ctx.arena}>
+            <link rel="stylesheet" href="/assets/map.css" />
+            <UsersMap @rendering={.client} />
+        </main>
+    );
+}
+
+pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
+    const size = map.stageSize();
+    const camera = ctx.state(map.Camera, map.initialCamera(size.w, size.h));
+    const drag = ctx.state(map.Drag, .{});
+    const tip = ctx.state(map.Tip, .{});
+    const search = ctx.state(map.Search, .{});
+    const cam = map.clampCamera(camera.get(), size.w, size.h);
+    const tip_v = tip.get();
+    const search_v = search.get();
+    const hover_only: ?usize = if (tip_v.selected != null) null else tip_v.hovered;
+
+    var parent_tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
+    var tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
+    const z_int: u8 = @intFromFloat(@floor(cam.z));
+    if (z_int > 0) {
+        map.collectTilesAt(ctx.allocator, &parent_tiles, cam, size.w, size.h, z_int - 1);
+    }
+    map.collectTilesAt(ctx.allocator, &tiles, cam, size.w, size.h, z_int);
+
+    var dock: std.ArrayListUnmanaged(map.DockEntry) = .empty;
+    {
+        var visible: std.ArrayListUnmanaged(map.Pin) = .empty;
+        for (map.pins) |pin| {
+            if (map.pinInView(pin, cam, size.w, size.h)) {
+                visible.append(ctx.allocator, pin) catch {};
+            }
+        }
+        map.collectDockEntries(ctx.allocator, &dock, visible.items);
+    }
+
+    var search_hits: std.ArrayListUnmanaged(usize) = .empty;
+    if (search_v.open) {
+        map.collectSearchResults(ctx.allocator, search_v.text(), &search_hits);
+    }
+
+    return (
+        <div
+            id="map-stage"
+            class={if (drag.get().active) "map-stage is-dragging" else "map-stage"}
+            @allocator={ctx.allocator}
+            onwheel={ctx.bind(map.onWheel)}
+            onpointerdown={ctx.bind(map.onPointerDown)}
+            onpointermove={ctx.bind(map.onPointerMove)}
+            onpointerup={ctx.bind(map.onPointerUp)}
+            onpointercancel={ctx.bind(map.onPointerUp)}
+            onpointerleave={ctx.bind(map.onPointerLeave)}
+        >
+            <div class="map-tiles" aria-hidden="true">
+                {for (parent_tiles.items) |tile| (
+                    <img
+                        class="map-tile map-tile-parent"
+                        src={map.fmtTileSrc(ctx.allocator, tile)}
+                        width="256"
+                        height="256"
+                        style={map.fmtTileStyle(ctx.allocator, tile)}
+                        draggable="false"
+                        alt=""
+                    />
+                )}
+                {for (tiles.items) |tile| (
+                    <img
+                        class="map-tile map-tile-main"
+                        src={map.fmtTileSrc(ctx.allocator, tile)}
+                        width="256"
+                        height="256"
+                        style={map.fmtTileStyle(ctx.allocator, tile)}
+                        draggable="false"
+                        alt=""
+                    />
+                )}
+            </div>
+
+            <div class="map-pins" aria-hidden="true">
+                {for (map.pins, 0..) |pin, i| (
+                    <div
+                        class={map.pinClass(tip_v, i, pin)}
+                        style={map.fmtPinStyle(ctx.allocator, pin, cam)}
+                    >
+                        {if (pin.mascot) |m| (
+                            <img
+                                class="map-pin-mascot"
+                                src={map.fmtMascotSrc(ctx.allocator, m)}
+                                alt=""
+                                draggable="false"
+                            />
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {if (hover_only) |idx| (
+                <div class="map-hover" style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}>
+                    <span class="map-hover-name">{map.pins[idx].username}</span>
+                    {if (map.pins[idx].city.len > 0) (
+                        <span class="map-hover-city">{map.pins[idx].city}</span>
+                    )}
+                </div>
+            )}
+
+            {if (tip_v.selected) |idx| (
+                <div
+                    class="map-tip"
+                    style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}
+                    onpointerdown={ctx.bind(map.onTipPointer)}
+                    onpointerup={ctx.bind(map.onTipPointer)}
+                    onpointermove={ctx.bind(map.onTipPointer)}
+                >
+                    <div class="map-tip-top">
+                        <div class="map-tip-who">
+                            <strong class="map-tip-name">{map.pins[idx].username}</strong>
+                            {if (map.pins[idx].city.len > 0) (
+                                <span class="map-tip-city">{map.pins[idx].city}</span>
+                            )}
+                        </div>
+                        <button type="button" class="map-tip-close" onclick={ctx.bind(map.onTipClose)} aria-label="Close">×</button>
+                    </div>
+                    {if (map.pins[idx].links.len > 0) (
+                        <div class="map-tip-links">
+                            {for (map.pins[idx].links) |link| (
+                                <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div class="map-controls" aria-label="Map controls" onpointerdown={ctx.bind(map.onControlsPointer)}>
+                <button type="button" class="map-ctrl" onclick={ctx.bind(map.onZoomIn)} aria-label="Zoom in">+</button>
+                <button type="button" class="map-ctrl" onclick={ctx.bind(map.onZoomOut)} aria-label="Zoom out">−</button>
+                <button type="button" class="map-ctrl" onclick={ctx.bind(map.onReset)} aria-label="Reset view">⌂</button>
+                <div class="map-ctrl-divider" aria-hidden="true"></div>
+                <button
+                    type="button"
+                    class={if (search_v.open) "map-ctrl is-active" else "map-ctrl"}
+                    onclick={ctx.bind(map.onSearchToggle)}
+                    aria-label="Search username"
+                    aria-expanded={if (search_v.open) "true" else "false"}
+                >
+                    <component.CircleIcon />
+                </button>
+            </div>
+
+            {if (search_v.open) (
+                <div
+                    class="map-search"
+                    onpointerdown={ctx.bind(map.onControlsPointer)}
+                    onwheel={ctx.bind(map.onDockWheel)}
+                >
+                    <div class="map-search-row">
+                        <input
+                            class="map-search-input"
+                            type="search"
+                            placeholder="Search username…"
+                            value={map.fmtQueryValue(ctx.allocator, search_v)}
+                            oninput={ctx.bind(map.onSearchInput)}
+                            autocomplete="off"
+                            autocapitalize="off"
+                            spellcheck="false"
+                            aria-label="Search username"
+                        />
+                    </div>
+                    {if (search_v.len == 0) (
+                        <p class="map-search-hint">Type a username</p>
+                    ) else if (search_hits.items.len == 0) (
+                        <p class="map-search-hint">No matches</p>
+                    ) else (
+                        <ul class="map-search-list">
+                            {for (search_hits.items) |ui| (
+                                <li>
+                                    <button
+                                        type="button"
+                                        class="map-search-hit"
+                                        value={map.fmtIndex(ctx.allocator, ui)}
+                                        onclick={ctx.bind(map.onSelectUser)}
+                                    >{map.users.users[ui].username}</button>
+                                </li>
+                            )}
+                        </ul>
+                    )}
+                </div>
+            )}
+
+            <aside class="map-dock" aria-live="polite" onwheel={ctx.bind(map.onDockWheel)}>
+                <div class="map-dock-head">
+                    <span class="map-dock-title">Ziguanas in view</span>
+                    <span class="map-dock-count">{map.fmtCount(ctx.allocator, dock.items.len)}</span>
+                </div>
+                {if (dock.items.len == 0) (
+                    <p class="map-dock-empty">No ziguanas here, zoom out or pan to find them</p>
+                ) else (
+                    <ul class="map-dock-list">
+                        {for (dock.items) |entry| (
+                            <li>
+                                <button
+                                    type="button"
+                                    class="map-dock-item"
+                                    value={map.fmtIndex(ctx.allocator, entry.user_index)}
+                                    onclick={ctx.bind(map.onSelectUser)}
+                                >
+                                    <span class="map-dock-name">{entry.username}</span>
+                                    {if (entry.place_label.len > 0) (
+                                        <span class="map-dock-city">{entry.place_label}</span>
+                                    )}
+                                </button>
+                            </li>
+                        )}
+                    </ul>
+                )}
+            </aside>
+
+            <p class="map-attrib">
+                © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
+                · © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>
+            </p>
+        </div>
+    );
+}

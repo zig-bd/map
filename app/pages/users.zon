@@ -1,0 +1,995 @@
+.{ .users = .{
+    .{
+        .username = "0ded",
+        .places = .{.{ .lat = 32.09807, .lng = 34.81193 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/0ded" }, .{ .label = "linkedin", .href = "https://www.linkedin.com/in/oded" } },
+    },
+    .{
+        .username = "0xsaif",
+        .places = .{.{ .lat = 30.0444, .lng = 31.2357 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/0xsirsaif" }, .{ .label = "Website", .href = "https://0xsaif.netlify.app/" } },
+    },
+    .{
+        .username = "_void3",
+        .places = .{.{ .lat = 46.05769, .lng = 14.50595 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/tadejg" }, .{ .label = "GitLab", .href = "https://gitlab.com/tadej3" } },
+    },
+    .{
+        .username = "aarvay",
+        .places = .{.{ .lat = 13.189592006563121, .lng = 80.2529463947743 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/aarvay" }, .{ .label = "Website", .href = "https://aarvay.com" } },
+    },
+    .{
+        .username = "Abel George Antony",
+        .places = .{.{ .lat = 9.368281, .lng = 76.47225 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/abelgeorgeantony" }, .{ .label = "Website", .href = "https://www.instagram.com/abelgeorgeantony/" } },
+    },
+    .{
+        .username = "ABuffSeagull",
+        .places = .{.{ .lat = 28.0401, .lng = -82.423 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ABuffSeagull" }, .{ .label = "Website", .href = "https://abuffseagull.dev" } },
+    },
+    .{
+        .username = "alexnasko\xcf\x82",
+        .places = .{.{ .lat = 40.629269, .lng = 22.947412 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/alexnask" }},
+    },
+    .{
+        .username = "Ali Cheraghi",
+        .places = .{.{ .lat = 35.69973, .lng = 51.337513 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/alichraghi" }, .{ .label = "Website", .href = "https://alichraghi.github.io" } },
+    },
+    .{
+        .username = "amesaine",
+        .places = .{.{ .lat = 14.58951, .lng = 120.7727 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/amesaine" }, .{ .label = "Youtube", .href = "https://www.youtube.com/@amesaine" } },
+    },
+    .{
+        .username = "andreafeletto",
+        .places = .{.{ .lat = 46.07468, .lng = 11.12808 }},
+        .links = .{ .{ .label = "sourcehut", .href = "https://sr.ht/~andreafeletto" }, .{ .label = "Website", .href = "https://andreafeletto.com" } },
+    },
+    .{
+        .username = "andrewzah",
+        .places = .{.{ .lat = 37.561514, .lng = 126.912798 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/andrewzah" }, .{ .label = "Website", .href = "https://andrewzah.com" } },
+    },
+    .{
+        .username = "Announcement",
+        .places = .{.{ .lat = 29.9145, .lng = -95.6207 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Announcement" }, .{ .label = "Website", .href = "http://mathematical.ml/" } },
+    },
+    .{ .username = "ArtixFox", .places = .{.{ .lat = 28.6517178, .lng = 77.2219388 }} },
+    .{
+        .username = "aryalaadi",
+        .places = .{.{ .lat = 27.6951215, .lng = 85.3297653 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/aryalaadi" }, .{ .label = "Website", .href = "https://aryalaadi.github.io/" } },
+    },
+    .{
+        .username = "AtomToast",
+        .places = .{.{ .lat = 52.5145075, .lng = 13.3501115 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/atomtoast" }},
+    },
+    .{
+        .username = "aurame",
+        .places = .{.{ .lat = 38.8977542, .lng = -77.0364908 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/SuperAuguste" }, .{ .label = "Website", .href = "https://augustera.me" } },
+    },
+    .{
+        .username = "Avokadoen",
+        .places = .{.{ .lat = 63.4185, .lng = 10.403 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Avokadoen" }, .{ .label = "Twitter", .href = "https://twitter.com/etxrase" } },
+    },
+    .{
+        .username = "Banacial",
+        .places = .{.{ .lat = 49.3797914, .lng = 8.6725471 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Banacial/" }},
+    },
+    .{
+        .username = "BaroqueLarouche",
+        .places = .{.{ .lat = 45.548689488694, .lng = -73.54559565718631 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/mlarouche" }},
+    },
+    .{
+        .username = "bdoner",
+        .places = .{.{ .lat = 56.1530557, .lng = 9.5183196 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/bdoner" }},
+    },
+    .{
+        .username = "bkataru",
+        .places = .{.{ .lat = 13.0373, .lng = 77.74959 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/bkataru" }, .{ .label = "Website", .href = "https://dev.to/bkataru" } },
+    },
+    .{
+        .username = "BlackGoku36",
+        .places = .{.{ .lat = 13.55717, .lng = 80.02501 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/BlackGoku36" }, .{ .label = "Website", .href = "https://blackgoku36.github.io/BG36Notes/" } },
+    },
+    .{
+        .username = "canadaduane",
+        .places = .{.{ .lat = 40.5837, .lng = -111.9061 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/canadaduane" }, .{ .label = "Website", .href = "https://www.relm.us" } },
+    },
+    .{
+        .username = "captainhorst",
+        .places = .{.{ .lat = 49.8748498, .lng = 8.5846105 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/fabioarnold" }},
+    },
+    .{
+        .username = "Cassidy",
+        .places = .{.{ .lat = 50.6289399415859, .lng = 3.0576253263001525 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/KevinBockelandt" }},
+    },
+    .{
+        .username = "cfrederrrr",
+        .places = .{.{ .lat = 38.958871, .lng = -77.359492 }},
+        .links = .{.{ .label = "Github", .href = "https://github.com/cfrederrrr" }},
+    },
+    .{
+        .username = "chrboesch",
+        .places = .{.{ .lat = 52.51738946892429, .lng = 13.379201824856725 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/chrboesch" }},
+    },
+    .{
+        .username = "Christiaan",
+        .places = .{.{ .lat = 50.870271, .lng = 4.084703 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/vrptnc" }},
+    },
+    .{
+        .username = "clebs",
+        .places = .{.{ .lat = 48.137222, .lng = 11.5655829 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/clebs" },
+            .{ .label = "Mastodon", .href = "https://hachyderm.io/@clebs" },
+            .{ .label = "Twitter", .href = "https://twitter.com/Cl3bs" },
+        },
+    },
+    .{
+        .username = "Cloudef",
+        .places = .{.{ .lat = 35.7033579, .lng = 139.6076765 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Cloudef" }, .{ .label = "Website", .href = "https://cloudef.pw" } },
+    },
+    .{
+        .username = "cnx",
+        .places = .{.{ .lat = 35.57171, .lng = 129.18973 }},
+        .links = .{.{ .label = "Website", .href = "https://cnx.gdn" }},
+    },
+    .{
+        .username = "Corendos",
+        .places = .{.{ .lat = 48.8635059, .lng = 2.3723771 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Corendos" }},
+    },
+    .{
+        .username = "cpuglitch",
+        .places = .{.{ .lat = 41.94, .lng = -87.64 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/mjoerussell" }},
+    },
+    .{
+        .username = "cricket",
+        .places = .{.{ .lat = 51.5, .lng = -3.19 }},
+        .links = .{.{ .label = "Website", .href = "https://kitty.codeberg.page" }},
+    },
+    .{
+        .username = "cturtle",
+        .places = .{.{ .lat = 40.2546, .lng = -111.6109 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/natecraddock" }, .{ .label = "Website", .href = "https://nathancraddock.com" } },
+    },
+    .{
+        .username = "cztomsik",
+        .places = .{.{ .lat = 49.1992, .lng = 16.599 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/cztomsik" }, .{ .label = "Website", .href = "https://tomsik.cz" } },
+    },
+    .{
+        .username = "DemonKingSwarn",
+        .places = .{.{ .lat = 23.035904, .lng = 84.538163 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/DemonKingSwarn" }, .{ .label = "Website", .href = "https://demonkingswarn.is-a.dev" } },
+    },
+    .{
+        .username = "Der Teufel",
+        .places = .{.{ .lat = 52.17535, .lng = 21.06258 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/der-teufel-programming" }},
+    },
+    .{
+        .username = "desttinghim",
+        .places = .{.{ .lat = 41.7337, .lng = -111.833 }},
+        .links = .{
+            .{ .label = "Blog", .href = "https://desttinghim.name" },
+            .{ .label = "GitHub", .href = "https://github.com/desttinghim" },
+            .{ .label = "Website", .href = "https://louispearson.work" },
+        },
+    },
+    .{
+        .username = "devins2518",
+        .places = .{.{ .lat = 40.427110525858915, .lng = -86.92671836568252 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/devins2518" }},
+    },
+    .{
+        .username = "dimdin",
+        .places = .{.{ .lat = 38.321733, .lng = 23.787934 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/dimdin" }},
+    },
+    .{
+        .username = "diseptennea",
+        .places = .{.{ .lat = 41.060783, .lng = 28.856667 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/diseptennea" }},
+    },
+    .{
+        .username = "Dromedario de Chapeu",
+        .places = .{.{ .lat = -7.2164, .lng = -35.9097 }},
+        .links = .{ .{ .label = "Bluesky", .href = "https://bsky.app/profile/dromedariodechapeu.bsky.social" }, .{ .label = "GitHub", .href = "https://github.com/MarceloLuisDantas" } },
+    },
+    .{
+        .username = "Durobot",
+        .places = .{.{ .lat = 47.02553, .lng = 28.82803 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Durobot/" }},
+    },
+    .{
+        .username = "Eleanor NB",
+        .places = .{.{ .lat = -37.821281299999995, .lng = 145.0162697 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/EleanorNB" }, .{ .label = "Website", .href = "https://eleanor-nb.com" } },
+    },
+    .{
+        .username = "endel",
+        .places = .{.{ .lat = -29.6381777, .lng = -51.007389 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/endel" },
+            .{ .label = "LinkedIn", .href = "https://linkedin.com/in/endel" },
+            .{ .label = "Twitter", .href = "https://twitter.com/endel" },
+        },
+    },
+    .{
+        .username = "ercntreras",
+        .places = .{.{ .lat = 18.9368, .lng = -99.201 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/er-contreras" }, .{ .label = "Website", .href = "https://www.axisofchange.xyz/" } },
+    },
+    .{
+        .username = "ewaldhorn",
+        .places = .{.{ .lat = -33.918861, .lng = 18.4233 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ewaldhorn" }, .{ .label = "Website", .href = "https://www.nofuss.co.za/" } },
+    },
+    .{
+        .username = "fallow64",
+        .places = .{.{ .lat = 43.0766, .lng = -89.4125 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/fallow64" }, .{ .label = "Website", .href = "https://austinschneider.dev" } },
+    },
+    .{
+        .username = "felbit",
+        .places = .{.{ .lat = 57.480087, .lng = 12.065557 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/felbit" }},
+    },
+    .{
+        .username = "fengb",
+        .places = .{.{ .lat = 41.8865, .lng = -87.6377 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/fengb" }, .{ .label = "Website", .href = "https://www.fengb.me" } },
+    },
+    .{
+        .username = "FireFox317",
+        .places = .{.{ .lat = 52.5085368, .lng = 6.0870086 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/FireFox317" }},
+    },
+    .{
+        .username = "firesquid6",
+        .places = .{.{ .lat = 30.1644672, .lng = -97.9149229 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/firesquid6" }, .{ .label = "Website", .href = "https://firesquid.co" } },
+    },
+    .{
+        .username = "Frain_Breeze",
+        .places = .{.{ .lat = 52.075648, .lng = 4.288393 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Frain-Breeze" }},
+    },
+    .{
+        .username = "fwx5618177",
+        .places = .{.{ .lat = 35.676192, .lng = 139.650311 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/fwx5618177" }},
+    },
+    .{
+        .username = "g-w1",
+        .places = .{.{ .lat = 40.778, .lng = -73.982 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/g-w1/" }, .{ .label = "Website", .href = "https://g-w1.github.io/blog/" } },
+    },
+    .{
+        .username = "gb82",
+        .places = .{.{ .lat = 42.27435, .lng = -71.8089 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/gianni-rosato" }, .{ .label = "Website", .href = "https://giannirosato.com/" } },
+    },
+    .{
+        .username = "git-bruh",
+        .places = .{.{ .lat = 13.0440477, .lng = 77.6182857 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/git-bruh" }, .{ .label = "Website", .href = "https://iovec.net" } },
+    },
+    .{
+        .username = "gonzo",
+        .places = .{.{ .lat = 52.382, .lng = 4.62938 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/gonzus" }},
+    },
+    .{
+        .username = "greenfork",
+        .places = .{.{ .lat = 52.2893, .lng = 76.9584 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/greenfork" }, .{ .label = "sourcehut", .href = "https://sr.ht/~greenfork/" } },
+    },
+    .{
+        .username = "guidorice",
+        .places = .{.{ .lat = 39.058, .lng = -108.557 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/guidorice" }},
+    },
+    .{
+        .username = "Guigui220D",
+        .places = .{.{ .lat = 48.8169282, .lng = 2.0301389 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Guigui220D" }},
+    },
+    .{
+        .username = "haze",
+        .places = .{.{ .lat = 40.81718, .lng = -73.93925 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/haze" }, .{ .label = "Website", .href = "https://haz.ee" } },
+    },
+    .{
+        .username = "hazeycode",
+        .places = .{.{ .lat = 53.4426, .lng = -2.2333 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/hazeycode" }, .{ .label = "Twitter", .href = "https://twitter.com/hazeycode" } },
+    },
+    .{
+        .username = "hbibel",
+        .places = .{.{ .lat = 48.14085, .lng = 11.55529 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/hbibel" }},
+    },
+    .{
+        .username = "heartofthebone",
+        .places = .{.{ .lat = 53.478137, .lng = -2.244703 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/mattyhall" }, .{ .label = "Website", .href = "https://mattjhall.co.uk" } },
+    },
+    .{
+        .username = "himujjal",
+        .places = .{.{ .lat = 26.1192489, .lng = 92.1945606 }},
+        .links = .{.{ .label = "Github", .href = "https://github.com/Himujjal" }},
+    },
+    .{
+        .username = "hkmshb",
+        .places = .{.{ .lat = 11.9882, .lng = 8.57124 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/hkmshb" }},
+    },
+    .{
+        .username = "ianprime0509",
+        .places = .{.{ .lat = 26.14394, .lng = -80.32117 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ianprime0509" }, .{ .label = "Website", .href = "https://ianjohnson.dev" } },
+    },
+    .{
+        .username = "iddev5",
+        .places = .{.{ .lat = 20.5, .lng = 84.4167 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/iddev5" }, .{ .label = "Website", .href = "https://iddev5.github.io" } },
+    },
+    .{
+        .username = "infrandomness",
+        .places = .{.{ .lat = 43.68911, .lng = 7.24028 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/infrandomness" }},
+    },
+    .{
+        .username = "injuly",
+        .places = .{.{ .lat = 12.9352, .lng = 77.6245 }},
+        .links = .{
+            .{ .label = "BlueSky", .href = "https://injuly.bsky.social" },
+            .{ .label = "GitHub", .href = "https://github.com/srijan-paul" },
+            .{ .label = "Twitter", .href = "https://twitter.com/ptrCast" },
+            .{ .label = "Website", .href = "https://injuly.in" },
+        },
+    },
+    .{
+        .username = "iszn_11",
+        .places = .{.{ .lat = 51.110667, .lng = 17.031117 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/iszn11" }},
+    },
+    .{
+        .username = "italo",
+        .places = .{.{ .lat = -7.203439, .lng = -39.330898 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/ItaloYt" }},
+    },
+    .{
+        .username = "itzurabhi",
+        .places = .{.{ .lat = 10.2384263, .lng = 76.3264958 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/itzurabhi" }},
+    },
+    .{
+        .username = "jackdbd",
+        .places = .{.{ .lat = 43.86631, .lng = 10.25375 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/jackdbd" },
+            .{ .label = "Twitter", .href = "https://twitter.com/jackdbd" },
+            .{ .label = "Website", .href = "https://www.giacomodebidda.com/" },
+        },
+    },
+    .{
+        .username = "Jan200101",
+        .places = .{.{ .lat = 51.59463, .lng = 7.14002 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Jan200101" }, .{ .label = "Website", .href = "https://jandroegehoff.de/" } },
+    },
+    .{
+        .username = "jcollie",
+        .places = .{.{ .lat = 41.5868654, .lng = -93.6249494 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/jcollie" }},
+    },
+    .{
+        .username = "jddkplc",
+        .places = .{.{ .lat = 47.482242387060815, .lng = 8.209297717072255 }},
+        .links = .{.{ .label = "Bsky", .href = "https://bsky.app/profile/jddkplc.bsky.social" }},
+    },
+    .{
+        .username = "jeang3nie",
+        .places = .{.{ .lat = 41.0247, .lng = -81.0504 }},
+        .links = .{.{ .label = "Gitlab", .href = "https://gitlab.com/jeang3nie" }},
+    },
+    .{
+        .username = "jedisct1",
+        .places = .{.{ .lat = 43.579411, .lng = 7.119145 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/jedisct1" },
+            .{ .label = "Instagram", .href = "https://instagram.com/pretty_simple_images" },
+            .{ .label = "Twitter", .href = "https://twitter.com/jedisct1" },
+        },
+    },
+    .{
+        .username = "jiacai2050",
+        .places = .{.{ .lat = 30.2555, .lng = 120.1214 }},
+        .links = .{
+            .{ .label = "Blog", .href = "https://en.liujiacai.net/" },
+            .{ .label = "GitHub", .href = "https://github.com/jiacai2050" },
+            .{ .label = "Maston", .href = "https://mastodon.social/@liujiacai" },
+            .{ .label = "Twitter", .href = "https://twitter.com/liujiacai" },
+        },
+    },
+    .{
+        .username = "jimt",
+        .places = .{.{ .lat = 34.9699179, .lng = 139.093337 }},
+        .links = .{
+            .{ .label = "Fediverse", .href = "https://mastodon.oeru.org/@jimt" },
+            .{ .label = "GitHub", .href = "https://github.com/jimt" },
+            .{ .label = "Twitter", .href = "https://twitter.com/jtittsler" },
+        },
+    },
+    .{
+        .username = "jmc",
+        .places = .{.{ .lat = 53.33817, .lng = -6.25914 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/jmc-88" }},
+    },
+    .{
+        .username = "joachimschmidt557",
+        .places = .{.{ .lat = 49.87283, .lng = 8.65118 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/joachimschmidt557" }},
+    },
+    .{
+        .username = "joe-degs",
+        .places = .{.{ .lat = 5.605, .lng = -0.1806 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Joe-Degs" }, .{ .label = "Website", .href = "https://joe-degs.github.io" } },
+    },
+    .{
+        .username = "joed",
+        .places = .{.{ .lat = 56.152, .lng = 10.2016 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/joedavis" }, .{ .label = "Website", .href = "https://jo.ie" } },
+    },
+    .{
+        .username = "JonathanHallstrom",
+        .places = .{.{ .lat = 59.3235977045232, .lng = 18.048092394894738 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/JonathanHallstrom" }},
+    },
+    .{
+        .username = "jorandirkgreef",
+        .places = .{.{ .lat = -33.93505546825675, .lng = 18.388405078533015 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/jorangreef" }, .{ .label = "TigerBeetle", .href = "https://github.com/coilhq/tigerbeetle" } },
+    },
+    .{
+        .username = "kassane",
+        .places = .{.{ .lat = -12.576967, .lng = -38.017303 }},
+        .links = .{
+            .{ .label = "Linkedin", .href = "https://linkedin.com/in/matcf" },
+            .{ .label = "Twitter", .href = "https://twitter.com/theucatarino" },
+            .{ .label = "Website", .href = "https://kassane.github.io" },
+        },
+    },
+    .{
+        .username = "kenneth",
+        .places = .{.{ .lat = -30.043238806639398, .lng = -51.19607365179435 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/kennethlaskoski" }, .{ .label = "Website", .href = "https://ken.net.br" } },
+    },
+    .{
+        .username = "kivikakk",
+        .places = .{.{ .lat = 59.437, .lng = 24.745 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/kivikakk" }, .{ .label = "Website", .href = "https://kivikakk.ee" } },
+    },
+    .{
+        .username = "klltkr",
+        .places = .{.{ .lat = 55.944069, .lng = -3.161931 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/malcolmstill" }, .{ .label = "Website", .href = "https://mstill.dev/" } },
+    },
+    .{
+        .username = "knarkzel",
+        .places = .{.{ .lat = 58.327, .lng = 8.5727 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Avokadoen" }, .{ .label = "Twitter", .href = "https://twitter.com/etxrase" } },
+    },
+    .{
+        .username = "KomariSpaghetti",
+        .places = .{.{ .lat = 57.0521, .lng = 9.9304 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Hejsil" }},
+    },
+    .{
+        .username = "kristoff",
+        .places = .{.{ .lat = 45.46415157096415, .lng = 9.19193517659586 }},
+        .links = .{
+            .{ .label = "Blog", .href = "https://kristoff.it" },
+            .{ .label = "Twitter", .href = "https://twitter.com/croloris" },
+            .{ .label = "Zig Showtime", .href = "https://zig.show" },
+        },
+    },
+    .{
+        .username = "ktravis",
+        .places = .{.{ .lat = 37.53818, .lng = -77.43631 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ktravis" }, .{ .label = "Website", .href = "https://kylemtravis.com" } },
+    },
+    .{
+        .username = "kvoli",
+        .places = .{.{ .lat = -37.80005774277568, .lng = 144.96444377045597 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/kvoli" }},
+    },
+    .{
+        .username = "lachlanm-git",
+        .places = .{.{ .lat = -31.992339723028124, .lng = 115.90047781540281 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/lachlanm-git" }},
+    },
+    .{
+        .username = "laladrik",
+        .places = .{.{ .lat = 53.345578, .lng = -6.263006 }},
+        .links = .{
+            .{ .label = "Codeberg", .href = "https://codeberg.org/laladrik" },
+            .{ .label = "Matrix", .href = "@billsky:matrix.org" },
+            .{ .label = "Website", .href = "https://laladrik.xyz" },
+        },
+    },
+    .{
+        .username = "laqudee",
+        .places = .{.{ .lat = 30.22872, .lng = 120.23478 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/laqudee" }, .{ .label = "Twitter", .href = "https://twitter.com/Laqudee1" } },
+    },
+    .{
+        .username = "leecannon",
+        .places = .{.{ .lat = 51.416, .lng = -0.754 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/leecannon" }},
+    },
+    .{
+        .username = "legenduzo",
+        .places = .{.{ .lat = 6.42795263, .lng = 3.45972176 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/legenduzo" }, .{ .label = "Website", .href = "https://aleaji.xyz" } },
+    },
+    .{
+        .username = "LewisGaul",
+        .places = .{.{ .lat = 51.6209567046579, .lng = -0.22155674013295001 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/LewisGaul/" }, .{ .label = "Website", .href = "https://www.lewisgaul.co.uk/" } },
+    },
+    .{
+        .username = "lhp",
+        .places = .{.{ .lat = 51.558, .lng = 9.946 }},
+        .links = .{ .{ .label = "sourcehut", .href = "https://sr.ht/~leon_plickat" }, .{ .label = "Website", .href = "https://leon_plickat.srht.site" } },
+    },
+    .{
+        .username = "LingQ",
+        .places = .{.{ .lat = 39.993445171748185, .lng = 116.47710688711835 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/lovebaihezi" }, .{ .label = "Website", .href = "https://lqxclqxc.com" } },
+    },
+    .{
+        .username = "lithdew",
+        .places = .{.{ .lat = 35.6072728, .lng = 139.6664774 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/lithdew" }, .{ .label = "Twitter", .href = "https://twitter.com/lithdew" } },
+    },
+    .{
+        .username = "LordMZTE",
+        .places = .{.{ .lat = 50.64776, .lng = 11.36078 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/LordMZTE" }, .{ .label = "Website", .href = "https://mzte.de" } },
+    },
+    .{
+        .username = "lovc21",
+        .places = .{.{ .lat = 46.047474, .lng = 14.495269 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/lovc21" }},
+    },
+    .{
+        .username = "Lucifer-02",
+        .places = .{.{ .lat = 21.037194, .lng = 105.768865 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Lucifer-02" }, .{ .label = "Website", .href = "https://www.facebook.com/a2lucifer" } },
+    },
+    .{
+        .username = "Luuk",
+        .places = .{.{ .lat = 52.069749731906306, .lng = 4.300255070858769 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Luukdegram" }},
+    },
+    .{
+        .username = "marler",
+        .places = .{.{ .lat = 43.63427, .lng = -116.31451 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/marler8997" }},
+    },
+    .{
+        .username = "marnix",
+        .places = .{.{ .lat = 52.025, .lng = 5.555 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/marnix" }},
+    },
+    .{
+        .username = "mattnite",
+        .places = .{.{ .lat = 48.4299858356731, .lng = -123.3751425642966 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/mattnite" }},
+    },
+    .{
+        .username = "matu3ba",
+        .places = .{.{ .lat = 50.7741, .lng = 6.08688 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/matu3ba" }, .{ .label = "Website", .href = "https://matu3ba.github.io/" } },
+    },
+    .{
+        .username = "mikkurogue",
+        .places = .{.{ .lat = 60.314318, .lng = 25.038856 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/mikkurogue" }, .{ .label = "Website", .href = "https://mikkurogue.github.io" } },
+    },
+    .{ .username = "miktwon", .places = .{.{ .lat = 50.4501, .lng = 30.5234 }} },
+    .{
+        .username = "mouvedia",
+        .places = .{.{ .lat = 48.85341, .lng = 2.3488 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Mouvedia" }},
+    },
+    .{
+        .username = "Namek",
+        .places = .{.{ .lat = 52.40739, .lng = 16.920236 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Namek" }, .{ .label = "Website", .href = "https://namekdev.net" } },
+    },
+    .{
+        .username = "nazhard",
+        .places = .{.{ .lat = -7.0590851, .lng = 107.796544 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/nazhard" }, .{ .label = "Website", .href = "https://nazhard.github.io" } },
+    },
+    .{
+        .username = "nektro",
+        .places = .{.{ .lat = 45.5145295, .lng = -122.6666099 }},
+        .links = .{
+            .{ .label = "Blog", .href = "https://mlog.nektro.net" },
+            .{ .label = "GitHub", .href = "https://github.com/nektro" },
+            .{ .label = "Twitch", .href = "https://www.twitch.tv/nektro77" },
+        },
+    },
+    .{
+        .username = "neuroDEVergent",
+        .places = .{.{ .lat = 44.80401, .lng = 20.46513 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/neuroDEVergent" },
+            .{ .label = "Website", .href = "https://braticpetar.xyz/" },
+            .{ .label = "YouTube", .href = "https://www.youtube.com/@undeniable_dillema" },
+        },
+    },
+    .{
+        .username = "nimaidev",
+        .places = .{.{ .lat = 12.9073152, .lng = 77.611008 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/nimaidev" }, .{ .label = "X", .href = "https://x.com/nimaidev_" } },
+    },
+    .{
+        .username = "Noel",
+        .places = .{.{ .lat = 10.2069616, .lng = 76.4456911 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/NoelJacob" }, .{ .label = "Website", .href = "https://noel.ink" } },
+    },
+    .{
+        .username = "nopainkiller",
+        .places = .{.{ .lat = 22.510357, .lng = 114.045427 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/hannibalhuang" }, .{ .label = "Website", .href = "https://hannibalhuang.github.io/" } },
+    },
+    .{
+        .username = "nurulhudaapon",
+        .places = .{.{ .lat = 23.72308, .lng = 90.40902 }},
+        .links = .{
+            .{ .label = "Website", .href = "https://nurulhudaapon.com" },
+            .{ .label = "GitHub", .href = "https://github.com/nurulhudaapon" },
+        },
+    },
+    .{
+        .username = "nyk",
+        .places = .{.{ .lat = 18.7816, .lng = 99.0064 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/nyk" }, .{ .label = "Website", .href = "https://cowham.net" } },
+    },
+    .{
+        .username = "omissis",
+        .places = .{.{ .lat = 45.116177, .lng = 7.742615 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/omissis" }, .{ .label = "linkedin", .href = "https://www.linkedin.com/in/claudiobeatrice/" } },
+    },
+    .{
+        .username = "os",
+        .places = .{.{ .lat = 31.036024, .lng = 31.362468 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/osamamragab" }, .{ .label = "Website", .href = "https://osamamragab.github.io" } },
+    },
+    .{
+        .username = "Painhardcore",
+        .places = .{.{ .lat = 59.90230804899131, .lng = 30.451644926267342 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/painhardcore" },
+            .{ .label = "TG", .href = "https://t.me/painhardcore_log" },
+            .{ .label = "Website", .href = "https://yurchenkov.ru" },
+        },
+    },
+    .{
+        .username = "peterhellberg",
+        .places = .{.{ .lat = 59.270903, .lng = 18.048124 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/peterhellberg" },
+            .{ .label = "Twitter", .href = "https://twitter.com/peterhellberg" },
+            .{ .label = "Website", .href = "https://c7.se" },
+        },
+    },
+    .{
+        .username = "PhilippWendel",
+        .places = .{.{ .lat = 48.778569, .lng = 9.179842 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/PhilippWendel" }, .{ .label = "Website", .href = "https://wendel.io" } },
+    },
+    .{
+        .username = "pimar57",
+        .places = .{.{ .lat = 44.87119943930373, .lng = -65.34573526307334 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/pimar57" }},
+    },
+    .{
+        .username = "Pixeli",
+        .places = .{.{ .lat = 60.40323, .lng = 25.10591 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/TommiSinivuo" },
+            .{ .label = "Twitter", .href = "https://twitter.com/TommiSinivuo" },
+            .{ .label = "Website", .href = "https://pixeli.dev" },
+        },
+    },
+    .{
+        .username = "pjz",
+        .places = .{.{ .lat = 38.92413807619247, .lng = -77.23687682571092 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/pjz" }, .{ .label = "Website", .href = "https://place.org/~pj/" } },
+    },
+    .{
+        .username = "postspectacular",
+        .places = .{.{ .lat = 48.3688, .lng = 10.8976 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/postspectacular" }, .{ .label = "Website", .href = "https://thi.ng" } },
+    },
+    .{
+        .username = "PrajwalCH",
+        .places = .{.{ .lat = 26.6701, .lng = 87.70635 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/PrajwalCH" }, .{ .label = "Twitter", .href = "https://twitter.com/prjwlCH" } },
+    },
+    .{
+        .username = "PressY4Pie",
+        .places = .{.{ .lat = 39.7645187, .lng = 104.9951952 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ConnorRigby" }, .{ .label = "Website", .href = "https://cone.codes" } },
+    },
+    .{
+        .username = "purple potato",
+        .places = .{.{ .lat = 45.5, .lng = 5.5 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/ShuP1" }},
+    },
+    .{
+        .username = "pyxel",
+        .places = .{.{ .lat = 33.7678358, .lng = -84.4906437 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/xpyxel" }, .{ .label = "Website", .href = "https://pyxel.pro" } },
+    },
+    .{
+        .username = "qbradley",
+        .places = .{.{ .lat = 47.85577242251713, .lng = -121.97079919180104 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/qbradley" }},
+    },
+    .{
+        .username = "ratfactor",
+        .places = .{.{ .lat = 33.9975, .lng = -84.3784 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ratfactor" }, .{ .label = "Website", .href = "http://ratfactor.com/" } },
+    },
+    .{
+        .username = "rbatiati",
+        .places = .{.{ .lat = -22.5078, .lng = -44.0946 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/batiati" }, .{ .label = "Twitter", .href = "https://twitter.com/rbatiati" } },
+    },
+    .{
+        .username = "reuben",
+        .places = .{.{ .lat = 47.719918, .lng = -122.333453 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/rdunnington/" }, .{ .label = "Website", .href = "https://rdunnington.github.io/" } },
+    },
+    .{
+        .username = "rimuspp",
+        .places = .{.{ .lat = 6.2426, .lng = -75.5853 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Deecellar" }, .{ .label = "Website", .href = "https://lldragon.net" } },
+    },
+    .{
+        .username = "rito",
+        .places = .{.{ .lat = 47.56014, .lng = 7.589706 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/rito1998" }, .{ .label = "linkedin", .href = "https://www.linkedin.com/in/riccardotorreggiani" } },
+    },
+    .{
+        .username = "rofrol",
+        .places = .{.{ .lat = 52.0763004, .lng = 21.003955 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/rofrol" }},
+    },
+    .{
+        .username = "rudedogg",
+        .places = .{.{ .lat = 42.8487, .lng = -106.2981 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/rudedogg" },
+            .{ .label = "Twitter", .href = "https://twitter.com/rudedoggtweets" },
+            .{ .label = "Website", .href = "https://austinrude.com" },
+        },
+    },
+    .{
+        .username = "rvcas",
+        .places = .{.{ .lat = 25.952256, .lng = -80.134144 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/rvcas" },
+            .{ .label = "Twitter", .href = "https://twitter.com/rvcas" },
+            .{ .label = "Website", .href = "https://rvcas.dev" },
+        },
+    },
+    .{
+        .username = "Seongmin",
+        .places = .{.{ .lat = 37.5245, .lng = 127.0354 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/seongminp" }, .{ .label = "Website", .href = "https://seongminpark.com" } },
+    },
+    .{
+        .username = "silversquirl",
+        .places = .{.{ .lat = 51.469243157521355, .lng = -2.5609748584114795 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/silversquirl" }},
+    },
+    .{
+        .username = "Sin-Gala",
+        .places = .{.{ .lat = 48.692055, .lng = 6.184417 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Sin-Gala" }, .{ .label = "Website", .href = "https://sin-gala.github.io/SinGala_Portfolio/" } },
+    },
+    .{
+        .username = "sjb",
+        .places = .{.{ .lat = 43.0031393, .lng = -81.2793478 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/SjB" }, .{ .label = "Website", .href = "https://www.uwo.ca/nca" } },
+    },
+    .{
+        .username = "slimsag",
+        .places = .{.{ .lat = 33.3918, .lng = -112.1249 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/hexops" }, .{ .label = "Website", .href = "https://slimsag.com" } },
+    },
+    .{
+        .username = "sobeston",
+        .places = .{.{ .lat = 51.4818208, .lng = -0.1444765 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/sobeston" }, .{ .label = "Twitter", .href = "https://twitter.com/soworston" } },
+    },
+    .{
+        .username = "Spex_guy",
+        .places = .{.{ .lat = 30.23460554902584, .lng = -97.81831217137179 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/SpexGuy" },
+            .{ .label = "Twitch", .href = "https://twitch.tv/spex_guy" },
+            .{ .label = "Twitter", .href = "https://twitter.com/cachecoherent" },
+            .{ .label = "Website", .href = "https://wikiwickham.com/martin" },
+        },
+    },
+    .{
+        .username = "srekel",
+        .places = .{.{ .lat = 59.234659, .lng = 18.231033 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/Srekel" },
+            .{ .label = "Mastodon", .href = "https://mastodon.gamedev.place/@srekel" },
+            .{ .label = "Stockholm Zig Meetup", .href = "https://www.meetup.com/zig-stockholm/" },
+            .{ .label = "Tides of Revival Youtube", .href = "https://www.youtube.com/@tides-of-revival" },
+            .{ .label = "Twitter/X", .href = "https://twitter.com/Srekel" },
+        },
+    },
+    .{
+        .username = "sunarch",
+        .places = .{.{ .lat = 47.4817, .lng = 19.1299 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/sunarch" }},
+    },
+    .{
+        .username = "supok",
+        .places = .{.{ .lat = 39.4684, .lng = -6.3792 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/tato" }},
+    },
+    .{
+        .username = "tauoverpi/levy",
+        .places = .{.{ .lat = 57.83815, .lng = 12.01487 }},
+        .links = .{
+            .{ .label = "Codeberg", .href = "https://codeberg.org/tauoverpi" },
+            .{ .label = "GitHub", .href = "https://github.com/tauoverpi" },
+            .{ .label = "Website", .href = "https://levy.cafe" },
+        },
+    },
+    .{
+        .username = "techatrix",
+        .places = .{.{ .lat = 53.56308, .lng = 9.98842 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/techatrix" }},
+    },
+    .{
+        .username = "The Computer Guy",
+        .places = .{.{ .lat = 33.2260995, .lng = -117.3875804 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/RossComputerGuy" }, .{ .label = "Website", .href = "https://tristanxr.com" } },
+    },
+    .{
+        .username = "tiagoantao",
+        .places = .{.{ .lat = 42.8355, .lng = -71.64893 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/tiagoantao" }, .{ .label = "Website", .href = "https://tiago.org" } },
+    },
+    .{
+        .username = "Timothy Elems",
+        .places = .{.{ .lat = 5.367164, .lng = -3.994405 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/TimothyElems" }, .{ .label = "Website", .href = "https://timothyelems.github.io/" } },
+    },
+    .{
+        .username = "tobyjaffey/trj",
+        .places = .{.{ .lat = 50.1442, .lng = -5.0683 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ringtailsoftware" }, .{ .label = "Mastodon", .href = "https://mastodon.me.uk/@tobyjaffey" } },
+    },
+    .{
+        .username = "tomhoule",
+        .places = .{.{ .lat = 52.55078, .lng = 13.3598 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/tomhoule" }, .{ .label = "Website", .href = "https://tomhoule.com" } },
+    },
+    .{
+        .username = "truemedian",
+        .places = .{.{ .lat = 31.325, .lng = -100.085 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/truemedian" }, .{ .label = "Website", .href = "https://www.truemedian.me" } },
+    },
+    .{
+        .username = "unknown pancake",
+        .places = .{.{ .lat = 45.17724690188088, .lng = 5.726010341924188 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/linkpy" }},
+    },
+    .{
+        .username = "v",
+        .places = .{.{ .lat = 12.9782619, .lng = 77.6385257 }},
+        .links = .{
+            .{ .label = "GitHub", .href = "https://github.com/avinassh" },
+            .{ .label = "Twitter", .href = "https://twitter.com/iavins" },
+            .{ .label = "Website", .href = "https://avi.im" },
+        },
+    },
+    .{
+        .username = "vent",
+        .places = .{.{ .lat = 51.499775, .lng = -0.288648 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/ve-nt" }, .{ .label = "GitLab", .href = "https://gitlab.com/ve-nt" } },
+    },
+    .{
+        .username = "vitalnodo",
+        .places = .{.{ .lat = 49.821194, .lng = 24.089889 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/vitalnodo" }, .{ .label = "Website", .href = "https://vitalnodo.xyz" } },
+    },
+    .{
+        .username = "vivek",
+        .places = .{.{ .lat = 28.5438, .lng = 77.2022 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/vivekpal1" }, .{ .label = "Website", .href = "https://vivekpal.in" } },
+    },
+    .{
+        .username = "vizmi",
+        .places = .{.{ .lat = 40.59387568713958, .lng = -111.83074884936349 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/vizmi" }, .{ .label = "Website", .href = "https://vizhanyo.info/" } },
+    },
+    .{
+        .username = "vrischmann",
+        .places = .{.{ .lat = 45.77462930232807, .lng = 4.827879517997313 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/vrischmann" }},
+    },
+    .{
+        .username = "wilsonk",
+        .places = .{.{ .lat = 51.053854, .lng = -114.078828 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/wilsonk" }},
+    },
+    .{
+        .username = "woody",
+        .places = .{.{ .lat = 49.0116454, .lng = 8.4001432 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/woodyAtHome" }},
+    },
+    .{
+        .username = "xackus",
+        .places = .{.{ .lat = 52, .lng = 21 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/xackus" }},
+    },
+    .{
+        .username = "xq",
+        .places = .{.{ .lat = 48.77844, .lng = 9.18014 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/MasterQ32" }, .{ .label = "Website", .href = "https://random-projects.net" } },
+    },
+    .{
+        .username = "yeshello",
+        .places = .{.{ .lat = 47, .lng = -117 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/PatrickTorgerson" }},
+    },
+    .{
+        .username = "Zorgatone",
+        .places = .{.{ .lat = 45.12705, .lng = 7.82472 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Zorgatone" }, .{ .label = "LinkedIn", .href = "https://www.linkedin.com/in/zorgatone" } },
+    },
+    .{
+        .username = "\xe3\x8e\x9d",
+        .places = .{.{ .lat = 45.44806881985764, .lng = 9.205307867512765 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/C8E" }, .{ .label = "Website", .href = "file:///dev/null" } },
+    },
+} }

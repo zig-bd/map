@@ -1,0 +1,22 @@
+.{
+    .name = .ziguanas,
+    .version = "0.1.0",
+    .fingerprint = 0x1666077679e2ffe7,
+    .minimum_zig_version = "0.17.0-dev.1422+e863bf3be",
+    .dependencies = .{
+        .ziex = .{
+            .url = "git+https://github.com/ziex-dev/ziex#07a425a1037d31a7a296aee168980b46096b02c6",
+            .hash = "ziex-0.1.0-dev-Z3YcvbkQlwHGqgpgJ7l_KC2sNTo9axfltE-uwLN7XOSo",
+        },
+        .zig_branding = .{
+            .url = "git+https://codeberg.org/ziglang/logo.git#2f6e01e9dc0410d6815c3e58be6d437bf26f0b4e",
+            .hash = "N-V-__8AAKsnBQC52IY79HuB1adcveDcx3eh0rcAHrYTLF-y",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "app",
+        "source",
+    },
+}
