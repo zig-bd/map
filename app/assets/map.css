@@ -721,6 +721,15 @@ select.map-join-input {
     pointer-events: none;
 }
 
+.map-dock-more {
+    align-self: center;
+    padding: 0.28rem 0.2rem;
+    color: var(--map-accent);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 .map-dock-empty {
     margin: 0;
     color: var(--map-muted);

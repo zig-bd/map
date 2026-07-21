@@ -4,6 +4,8 @@ const zx = @import("zx");
 const component = @import("component.zx");
 const map = @import("map.zig");
 
+const DOCK_DISPLAY_LIMIT: usize = 100;
+
 pub fn Page(ctx: zx.PageContext) !zx.Component {
     const rand_id = try ctx.fmt("{x}", .{randInt(zx.io(), u32)});
     return (
@@ -43,6 +45,8 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
         }
         map.collectDockEntries(ctx.allocator, &dock, visible.items);
     }
+    const dock_visible = dock.items[0..@min(dock.items.len, DOCK_DISPLAY_LIMIT)];
+    const dock_hidden = dock.items.len - dock_visible.len;
 
     var search_hits: std.ArrayListUnmanaged(usize) = .empty;
     if (search_v.open) {
@@ -345,7 +349,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                     <p class="map-dock-empty">No ziguanas here, zoom out or pan to find them</p>
                 ) else (
                     <ul class="map-dock-list">
-                        {for (dock.items) |entry| (
+                        {for (dock_visible) |entry| (
                             <li>
                                 <button
                                     type="button"
@@ -359,6 +363,9 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                                     )}
                                 </button>
                             </li>
+                        )}
+                        {if (dock_hidden > 0) (
+                            <li class="map-dock-more">+ {map.fmtCount(ctx.allocator, dock_hidden)}</li>
                         )}
                     </ul>
                 )}
