@@ -24,7 +24,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
 
     var parent_tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
     var tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
-    const z_int: u8 = @intFromFloat(@floor(cam.z));
+    const z_int: u8 = map.displayTileZoom(cam.z);
     if (z_int > 0) {
         map.collectTilesAt(ctx.allocator, &parent_tiles, cam, size.w, size.h, z_int - 1);
     }
@@ -164,6 +164,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 >
                     <div class="map-search-row">
                         <input
+                            id="map-search-input"
                             class="map-search-input"
                             type="search"
                             placeholder="Search username…"
@@ -172,6 +173,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                             autocomplete="off"
                             autocapitalize="off"
                             spellcheck="false"
+                            autofocus="true"
                             aria-label="Search username"
                         />
                     </div>
@@ -196,7 +198,12 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 </div>
             )}
 
-            <aside class="map-dock" aria-live="polite" onwheel={ctx.bind(map.onDockWheel)}>
+            <aside
+                class="map-dock"
+                aria-live="polite"
+                onpointerdown={ctx.bind(map.onControlsPointer)}
+                onwheel={ctx.bind(map.onDockWheel)}
+            >
                 <div class="map-dock-head">
                     <span class="map-dock-title">Ziguanas in view</span>
                     <span class="map-dock-count">{map.fmtCount(ctx.allocator, dock.items.len)}</span>

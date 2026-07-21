@@ -8,6 +8,7 @@ pub const MIN_Z: f64 = 2.0;
 pub const MAX_Z: f64 = 18.0;
 pub const ZOOM_STEP_BUTTON: f64 = 0.55;
 pub const ZOOM_WHEEL_SENS: f64 = 0.0020;
+pub const ZOOM_TRACKPAD_SENS: f64 = 0.0055;
 pub const HIT_PX: f64 = 18;
 pub const CLICK_SLOP_PX: i32 = 6;
 
@@ -229,6 +230,11 @@ pub fn zoomTo(cam: Camera, new_z: f64, focus_x: f64, focus_y: f64, el_w: f64, el
     }, el_w, el_h);
 }
 
+pub fn displayTileZoom(z: f64) u8 {
+    const clamped = std.math.clamp(z, 0, MAX_Z);
+    return @intFromFloat(@min(@floor(clamped + 0.72), MAX_Z));
+}
+
 pub fn collectTilesAt(
     allocator: zx.Allocator,
     out: *std.ArrayListUnmanaged(TileView),
@@ -298,6 +304,14 @@ pub fn stageSize() struct { w: f64, h: f64 } {
     const h = el.getProperty(f64, "clientHeight") catch 800;
     if (w <= 0 or h <= 0) return .{ .w = 1280, .h = 800 };
     return .{ .w = w, .h = h };
+}
+
+fn focusSearchInput() void {
+    if (!zx.platform.isClient()) return;
+    const document = zx.client.Document.init(zx.allocator);
+    const input = document.getElementById("map-search-input") catch return;
+    defer input.deinit();
+    input.ref.call(void, "focus", .{}) catch {};
 }
 
 fn pointerFocus(client_x: i32, client_y: i32, el_w: f64, el_h: f64) struct { x: f64, y: f64 } {
@@ -396,9 +410,14 @@ pub fn onWheel(e: *zx.client.Event.Stateful) void {
     var delta = we.delta_y;
     if (we.delta_mode == 1) delta *= 16;
     if (we.delta_mode == 2) delta *= size.h;
+
+    const sens = if (we.delta_mode == 0 and @abs(delta) < 48)
+        ZOOM_TRACKPAD_SENS
+    else
+        ZOOM_WHEEL_SENS;
     delta = std.math.clamp(delta, -100.0, 100.0);
 
-    next.camera = zoomTo(cam, cam.z - delta * ZOOM_WHEEL_SENS, focus.x, focus.y, size.w, size.h);
+    next.camera = zoomTo(cam, cam.z - delta * sens, focus.x, focus.y, size.w, size.h);
     state.set(next);
 }
 
@@ -459,7 +478,9 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
     }
 
     const focus = pointerFocus(pe.client_x, pe.client_y, size.w, size.h);
-    next.tip.hovered = hitPinIndex(focus.x, focus.y, cam);
+    const hovered = hitPinIndex(focus.x, focus.y, cam);
+    if (next.tip.hovered == hovered) return;
+    next.tip.hovered = hovered;
     state.set(next);
 }
 
@@ -488,6 +509,7 @@ pub fn onPointerLeave(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
     const state = e.state(State);
     var next = state.get();
+    if (next.tip.hovered == null) return;
     next.tip.hovered = null;
     state.set(next);
 }
@@ -549,6 +571,7 @@ pub fn onSearchToggle(e: *zx.client.Event.Stateful) void {
     next.search.open = !next.search.open;
     if (!next.search.open) next.search.len = 0;
     state.set(next);
+    if (next.search.open) focusSearchInput();
 }
 
 pub fn onSearchInput(e: *zx.client.Event.Stateful) void {
