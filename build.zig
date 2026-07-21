@@ -16,8 +16,8 @@ pub fn build(b: *std.Build) !void {
     });
 
     _ = try ziex.init(b, app_exe, .{
+        .cli = .{ .zig_path = "zig" },
         .app = .{
-            .cli = .{ .zig_path = "zig" },
             .client = .{
                 .bindings = .{
                     .from_source = true,
