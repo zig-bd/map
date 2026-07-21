@@ -48,23 +48,29 @@ pub const Pin = struct {
     city: []const u8,
     lat: f64,
     lng: f64,
+    mx: f64,
+    my: f64,
     links: []const Link,
     mascot: ?Mascot = null,
 };
 
 pub const pins: []const Pin = blk: {
+    @setEvalBranchQuota(100_000);
     var n: usize = 0;
     for (users.users) |u| n += u.places.len;
     var arr: [n]Pin = undefined;
     var i: usize = 0;
     for (users.users, 0..) |u, ui| {
         for (u.places) |place| {
+            const m = mercatorNorm(place.lat, place.lng);
             arr[i] = .{
                 .user_index = ui,
                 .username = u.username,
                 .city = place.city,
                 .lat = place.lat,
                 .lng = place.lng,
+                .mx = m.x,
+                .my = m.y,
                 .links = u.links,
                 .mascot = if (u.avatar) |a| a.mascot else null,
             };
@@ -195,6 +201,27 @@ const TILE_PAD_PX: f64 = 256.0;
 
 var live_drag: Drag = .{};
 
+const StageCache = struct {
+    w: f64 = 1280,
+    h: f64 = 800,
+    left: f64 = 0,
+    top: f64 = 0,
+    valid: bool = false,
+};
+
+var stage_cache: StageCache = .{};
+
+const CamPreview = struct {
+    active: bool = false,
+    scheduled: bool = false,
+    base: Camera = .{ .x = 0, .y = 0, .z = 0 },
+    live: Camera = .{ .x = 0, .y = 0, .z = 0 },
+    state: ?*zx.State(State) = null,
+    clear_hover: bool = false,
+};
+
+var cam_preview: CamPreview = .{};
+
 fn skipState(e: *zx.client.Event.Stateful) void {
     _ = e.state(State);
 }
@@ -207,14 +234,20 @@ pub fn pinClass(tip: Tip, i: usize, pin: Pin) []const u8 {
 }
 
 pub fn collectDockEntries(allocator: zx.Allocator, out: *std.ArrayListUnmanaged(DockEntry), visible: []const Pin) void {
+    const index_of = allocator.alloc(?usize, users.users.len) catch return;
+    defer allocator.free(index_of);
+    @memset(index_of, null);
+
     for (visible) |pin| {
-        for (out.items) |*entry| {
-            if (entry.user_index == pin.user_index) {
-                entry.extra_places += 1;
-                entry.place_label = fmtDockPlace(allocator, entry.first_city, entry.extra_places) catch entry.first_city;
-                break;
-            }
+        if (index_of[pin.user_index]) |ei| {
+            out.items[ei].extra_places += 1;
+            out.items[ei].place_label = fmtDockPlace(
+                allocator,
+                out.items[ei].first_city,
+                out.items[ei].extra_places,
+            ) catch out.items[ei].first_city;
         } else {
+            index_of[pin.user_index] = out.items.len;
             out.append(allocator, .{
                 .user_index = pin.user_index,
                 .username = pin.username,
@@ -223,6 +256,19 @@ pub fn collectDockEntries(allocator: zx.Allocator, out: *std.ArrayListUnmanaged(
                 .place_label = pin.city,
             }) catch {};
         }
+    }
+}
+
+pub fn collectVisiblePinIndices(
+    allocator: zx.Allocator,
+    out: *std.ArrayListUnmanaged(usize),
+    cam: Camera,
+    el_w: f64,
+    el_h: f64,
+) void {
+    for (pins, 0..) |pin, i| {
+        if (!pinInView(pin, cam, el_w, el_h)) continue;
+        out.append(allocator, i) catch {};
     }
 }
 
@@ -236,15 +282,25 @@ fn worldSize(z: f64) f64 {
     return TILE * std.math.exp2(z);
 }
 
-fn project(lat: f64, lng: f64, z: f64) struct { x: f64, y: f64 } {
+fn mercatorNorm(lat: f64, lng: f64) struct { x: f64, y: f64 } {
     const lat_c = std.math.clamp(lat, -85.05112878, 85.05112878);
     const sin_y = @sin(lat_c * std.math.pi / 180.0);
     const y = 0.5 - @log((1.0 + sin_y) / (1.0 - sin_y)) / (4.0 * std.math.pi);
-    const w = worldSize(z);
     return .{
-        .x = (lng + 180.0) / 360.0 * w,
-        .y = y * w,
+        .x = (lng + 180.0) / 360.0,
+        .y = y,
     };
+}
+
+fn project(lat: f64, lng: f64, z: f64) struct { x: f64, y: f64 } {
+    const m = mercatorNorm(lat, lng);
+    const w = worldSize(z);
+    return .{ .x = m.x * w, .y = m.y * w };
+}
+
+fn projectPin(pin: Pin, z: f64) struct { x: f64, y: f64 } {
+    const w = worldSize(z);
+    return .{ .x = pin.mx * w, .y = pin.my * w };
 }
 
 fn effectiveMinZoom(el_w: f64, el_h: f64) f64 {
@@ -340,7 +396,7 @@ pub fn pinInView(pin: Pin, cam: Camera, el_w: f64, el_h: f64) bool {
 }
 
 pub fn screenPos(pin: Pin, cam: Camera) struct { x: f64, y: f64 } {
-    const p = project(pin.lat, pin.lng, cam.z);
+    const p = projectPin(pin, cam.z);
     return .{ .x = p.x - cam.x, .y = p.y - cam.y };
 }
 
@@ -360,15 +416,38 @@ fn hitPinIndex(sx: f64, sy: f64, cam: Camera) ?usize {
     return best_i;
 }
 
-pub fn stageSize() struct { w: f64, h: f64 } {
-    if (!zx.platform.isClient()) return .{ .w = 1280, .h = 800 };
+fn refreshStageCache() void {
+    if (!zx.platform.isClient()) {
+        stage_cache = .{ .w = 1280, .h = 800, .left = 0, .top = 0, .valid = true };
+        return;
+    }
     const document = zx.client.Document.init(zx.allocator);
-    const el = document.getElementById("map-stage") catch return .{ .w = 1280, .h = 800 };
+    const el = document.getElementById("map-stage") catch {
+        stage_cache.valid = false;
+        return;
+    };
     defer el.deinit();
     const w = el.getProperty(f64, "clientWidth") catch 1280;
     const h = el.getProperty(f64, "clientHeight") catch 800;
-    if (w <= 0 or h <= 0) return .{ .w = 1280, .h = 800 };
-    return .{ .w = w, .h = h };
+    var left: f64 = 0;
+    var top: f64 = 0;
+    if (el.ref.call(js.Object, "getBoundingClientRect", .{})) |rect| {
+        defer rect.deinit();
+        left = rect.get(f64, "left") catch 0;
+        top = rect.get(f64, "top") catch 0;
+    } else |_| {}
+    stage_cache = .{
+        .w = if (w > 0) w else 1280,
+        .h = if (h > 0) h else 800,
+        .left = left,
+        .top = top,
+        .valid = true,
+    };
+}
+
+pub fn stageSize() struct { w: f64, h: f64 } {
+    if (!stage_cache.valid) refreshStageCache();
+    return .{ .w = stage_cache.w, .h = stage_cache.h };
 }
 
 fn focusSearchInput() void {
@@ -380,19 +459,10 @@ fn focusSearchInput() void {
 }
 
 fn pointerFocus(client_x: i32, client_y: i32, el_w: f64, el_h: f64) struct { x: f64, y: f64 } {
-    if (!zx.platform.isClient()) return .{ .x = el_w * 0.5, .y = el_h * 0.5 };
-    const document = zx.client.Document.init(zx.allocator);
-    const el = document.getElementById("map-stage") catch return .{ .x = el_w * 0.5, .y = el_h * 0.5 };
-    defer el.deinit();
-    const rect = el.ref.call(js.Object, "getBoundingClientRect", .{}) catch {
-        return .{ .x = el_w * 0.5, .y = el_h * 0.5 };
-    };
-    defer rect.deinit();
-    const left = rect.get(f64, "left") catch 0;
-    const top = rect.get(f64, "top") catch 0;
+    if (!stage_cache.valid) refreshStageCache();
     return .{
-        .x = std.math.clamp(@as(f64, @floatFromInt(client_x)) - left, 0, el_w),
-        .y = std.math.clamp(@as(f64, @floatFromInt(client_y)) - top, 0, el_h),
+        .x = std.math.clamp(@as(f64, @floatFromInt(client_x)) - stage_cache.left, 0, el_w),
+        .y = std.math.clamp(@as(f64, @floatFromInt(client_y)) - stage_cache.top, 0, el_h),
     };
 }
 
@@ -440,19 +510,71 @@ fn endPinchKeepPan(d: *Drag, lifted_id: i32) void {
 }
 
 fn setWorldTransform(dx: f64, dy: f64) void {
+    setWorldTransformScale(dx, dy, 1.0);
+}
+
+fn setWorldTransformScale(dx: f64, dy: f64, scale: f64) void {
     if (!zx.platform.isClient()) return;
     const document = zx.client.Document.init(zx.allocator);
     const el = document.getElementById("map-world") catch return;
     defer el.deinit();
     const style = el.ref.get(js.Object, "style") catch return;
     defer style.deinit();
-    var buf: [80]u8 = undefined;
-    const css = std.fmt.bufPrint(&buf, "translate3d({d:.2}px,{d:.2}px,0)", .{ dx, dy }) catch return;
+    style.set("transformOrigin", js.string("0 0")) catch {};
+    var buf: [96]u8 = undefined;
+    const css = std.fmt.bufPrint(
+        &buf,
+        "translate3d({d:.2}px,{d:.2}px,0) scale({d:.5})",
+        .{ dx, dy, scale },
+    ) catch return;
     style.set("transform", js.string(css)) catch {};
 }
 
 fn clearWorldTransform() void {
-    setWorldTransform(0, 0);
+    setWorldTransformScale(0, 0, 1.0);
+}
+
+fn setWorldCamPreview(base: Camera, live: Camera) void {
+    const scale = std.math.exp2(live.z - base.z);
+    const tx = base.x * scale - live.x;
+    const ty = base.y * scale - live.y;
+    setWorldTransformScale(tx, ty, scale);
+}
+
+fn flushCamPreview() void {
+    cam_preview.scheduled = false;
+    const state = cam_preview.state orelse {
+        cam_preview.active = false;
+        return;
+    };
+    if (!cam_preview.active) return;
+    var next = state.get();
+    next.camera = cam_preview.live;
+    next.drag = live_drag;
+    if (cam_preview.clear_hover) next.tip.hovered = null;
+    cam_preview.active = false;
+    cam_preview.clear_hover = false;
+    clearWorldTransform();
+    state.set(next);
+}
+
+fn queueCamPreview(state: *zx.State(State), base: Camera, live: Camera, clear_hover: bool) void {
+    if (!cam_preview.active) {
+        cam_preview.base = base;
+        cam_preview.active = true;
+    }
+    cam_preview.live = live;
+    cam_preview.state = state;
+    if (clear_hover) cam_preview.clear_hover = true;
+    setWorldCamPreview(cam_preview.base, cam_preview.live);
+    if (cam_preview.scheduled) return;
+    cam_preview.scheduled = true;
+    _ = zx.client.setTimeout(&flushCamPreview, 0);
+}
+
+fn flushCamPreviewNow() void {
+    if (!cam_preview.active) return;
+    flushCamPreview();
 }
 
 fn visualPanCamera(base: Camera, d: *Drag, el_w: f64, el_h: f64) Camera {
@@ -489,7 +611,7 @@ fn focusUser(
 ) void {
     const pin_i = firstPinForUser(user_index) orelse return;
     const pin = pins[pin_i];
-    const p = project(pin.lat, pin.lng, FLY_Z);
+    const p = projectPin(pin, FLY_Z);
     state.camera = clampCamera(.{
         .x = p.x - el_w * 0.5,
         .y = p.y - el_h * 0.45,
@@ -528,12 +650,15 @@ pub fn onWheel(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
     const state = e.state(State);
     var next = state.get();
+    refreshStageCache();
     const size = stageSize();
     commitWorldPan(&next.camera, &live_drag, size.w, size.h);
     live_drag = .{};
+    next.drag = .{};
 
     const we = e.as(zx.client.events.WheelEvent, zx.allocator);
-    const cam = clampCamera(next.camera, size.w, size.h);
+    const committed = clampCamera(next.camera, size.w, size.h);
+    const base = if (cam_preview.active) cam_preview.live else committed;
     const focus = pointerFocus(we.client_x, we.client_y, size.w, size.h);
 
     var delta = we.delta_y;
@@ -546,9 +671,8 @@ pub fn onWheel(e: *zx.client.Event.Stateful) void {
         ZOOM_WHEEL_SENS;
     delta = std.math.clamp(delta, -100.0, 100.0);
 
-    next.camera = zoomTo(cam, cam.z - delta * sens, focus.x, focus.y, size.w, size.h);
-    next.drag = .{};
-    state.set(next);
+    const live = zoomTo(base, base.z - delta * sens, focus.x, focus.y, size.w, size.h);
+    queueCamPreview(state, committed, live, false);
 }
 
 pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
@@ -559,11 +683,14 @@ pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
     if (pe.button != 0) return;
 
+    refreshStageCache();
+    flushCamPreviewNow();
+    next = state.get();
+
     var d = if (live_drag.active) live_drag else next.drag;
     const size = stageSize();
 
     if (d.active) {
-        // Second finger → commit CSS pan, then start pinch-zoom.
         if (d.pointer2_id < 0 and pe.pointer_id != d.pointer_id) {
             commitWorldPan(&next.camera, &d, size.w, size.h);
             capturePointer(pe.pointer_id);
@@ -602,7 +729,7 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
     var d = if (live_drag.active) live_drag else next.drag;
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
     const size = stageSize();
-    var cam = clampCamera(next.camera, size.w, size.h);
+    var cam = if (cam_preview.active) cam_preview.live else clampCamera(next.camera, size.w, size.h);
 
     if (d.active) {
         if (d.pointer2_id >= 0) {
@@ -637,17 +764,17 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
             }
             cam.x -= new_mid_x - old_mid_x;
             cam.y -= new_mid_y - old_mid_y;
-            next.camera = clampCamera(cam, size.w, size.h);
-            next.tip.hovered = null;
+            cam = clampCamera(cam, size.w, size.h);
             d.last_pinch_dist = new_dist;
             live_drag = d;
-            next.drag = d;
-            state.set(next);
+            queueCamPreview(state, clampCamera(next.camera, size.w, size.h), cam, true);
             return;
         }
 
         if (pe.pointer_id != d.pointer_id) return;
         if ((pe.buttons & 1) == 0) {
+            flushCamPreviewNow();
+            next = state.get();
             commitWorldPan(&next.camera, &d, size.w, size.h);
             releasePointer(d.pointer_id);
             live_drag = .{};
@@ -662,6 +789,9 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
 
         if (d.moved) {
             e.preventDefault();
+            flushCamPreviewNow();
+            next = state.get();
+            cam = clampCamera(next.camera, size.w, size.h);
             d.world_dx += @as(f64, @floatFromInt(pe.client_x - d.last_x));
             d.world_dy += @as(f64, @floatFromInt(pe.client_y - d.last_y));
             d.last_x = pe.client_x;
@@ -695,6 +825,7 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
 pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
     const state = e.state(State);
+    flushCamPreviewNow();
     var next = state.get();
     var d = if (live_drag.active) live_drag else next.drag;
     if (!d.active) return;
@@ -704,6 +835,7 @@ pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
 
     const size = stageSize();
 
+    // One finger of a pinch lifted → keep panning with the remaining finger.
     if (d.pointer2_id >= 0) {
         endPinchKeepPan(&d, pe.pointer_id);
         live_drag = d;
@@ -761,25 +893,39 @@ pub fn onTipClose(e: *zx.client.Event.Stateful) void {
 pub fn onZoomIn(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
     const state = e.state(State);
+    flushCamPreviewNow();
     var next = state.get();
+    refreshStageCache();
     const size = stageSize();
+    commitWorldPan(&next.camera, &live_drag, size.w, size.h);
+    live_drag = .{};
     const cam = clampCamera(next.camera, size.w, size.h);
     next.camera = zoomTo(cam, cam.z + ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h);
+    next.drag = .{};
     state.set(next);
 }
 
 pub fn onZoomOut(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
     const state = e.state(State);
+    flushCamPreviewNow();
     var next = state.get();
+    refreshStageCache();
     const size = stageSize();
+    commitWorldPan(&next.camera, &live_drag, size.w, size.h);
+    live_drag = .{};
     const cam = clampCamera(next.camera, size.w, size.h);
     next.camera = zoomTo(cam, cam.z - ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h);
+    next.drag = .{};
     state.set(next);
 }
 
 pub fn onReset(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
+    flushCamPreviewNow();
+    live_drag = .{};
+    clearWorldTransform();
+    refreshStageCache();
     const size = stageSize();
     e.state(State).set(.{ .camera = initialCamera(size.w, size.h) });
 }
@@ -1216,6 +1362,10 @@ pub fn fmtTileSrc(allocator: zx.Allocator, tile: TileView) []const u8 {
         "https://basemaps.cartocdn.com/rastertiles/voyager/{d}/{d}/{d}.png",
         .{ tile.z, tile.x, tile.y },
     ) catch "";
+}
+
+pub fn fmtTileKey(allocator: zx.Allocator, tile: TileView) []const u8 {
+    return std.fmt.allocPrint(allocator, "{d}/{d}/{d}", .{ tile.z, tile.x, tile.y }) catch "";
 }
 
 pub fn fmtTileStyle(allocator: zx.Allocator, tile: TileView) []const u8 {

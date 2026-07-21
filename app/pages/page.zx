@@ -31,13 +31,14 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     }
     map.collectTilesAt(ctx.allocator, &tiles, cam, size.w, size.h, z_int);
 
+    var visible_pin_indices: std.ArrayListUnmanaged(usize) = .empty;
+    map.collectVisiblePinIndices(ctx.allocator, &visible_pin_indices, cam, size.w, size.h);
+
     var dock: std.ArrayListUnmanaged(map.DockEntry) = .empty;
     {
         var visible: std.ArrayListUnmanaged(map.Pin) = .empty;
-        for (map.pins) |pin| {
-            if (map.pinInView(pin, cam, size.w, size.h)) {
-                visible.append(ctx.allocator, pin) catch {};
-            }
+        for (visible_pin_indices.items) |i| {
+            visible.append(ctx.allocator, map.pins[i]) catch {};
         }
         map.collectDockEntries(ctx.allocator, &dock, visible.items);
     }
@@ -63,6 +64,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 <div class="map-tiles" aria-hidden="true">
                     {for (parent_tiles.items) |tile| (
                         <img
+                            key={map.fmtTileKey(ctx.allocator, tile)}
                             class="map-tile map-tile-parent"
                             src={map.fmtTileSrc(ctx.allocator, tile)}
                             width="256"
@@ -74,6 +76,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                     )}
                     {for (tiles.items) |tile| (
                         <img
+                            key={map.fmtTileKey(ctx.allocator, tile)}
                             class="map-tile map-tile-main"
                             src={map.fmtTileSrc(ctx.allocator, tile)}
                             width="256"
@@ -86,12 +89,13 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 </div>
 
                 <div class="map-pins" aria-hidden="true">
-                    {for (map.pins, 0..) |pin, i| (
+                    {for (visible_pin_indices.items) |i| (
                         <div
-                            class={map.pinClass(tip_v, i, pin)}
-                            style={map.fmtPinStyle(ctx.allocator, pin, cam)}
+                            key={map.fmtIndex(ctx.allocator, i)}
+                            class={map.pinClass(tip_v, i, map.pins[i])}
+                            style={map.fmtPinStyle(ctx.allocator, map.pins[i], cam)}
                         >
-                            {if (pin.mascot) |m| (
+                            {if (map.pins[i].mascot) |m| (
                                 <img
                                     class="map-pin-mascot"
                                     src={map.fmtMascotSrc(ctx.allocator, m)}
