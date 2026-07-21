@@ -87,15 +87,19 @@ pub const Camera = struct {
     z: f64,
 };
 
+/// iOS Safari can expose negative pointer IDs.
+const NO_POINTER: i32 = -1;
+
 pub const Drag = struct {
     active: bool = false,
     moved: bool = false,
+    second_active: bool = false,
     last_x: i32 = 0,
     last_y: i32 = 0,
     start_x: i32 = 0,
     start_y: i32 = 0,
-    pointer_id: i32 = -1,
-    pointer2_id: i32 = -1,
+    pointer_id: i32 = NO_POINTER,
+    pointer2_id: i32 = NO_POINTER,
     last2_x: i32 = 0,
     last2_y: i32 = 0,
     last_pinch_dist: f64 = 0,
@@ -196,8 +200,8 @@ pub const DockEntry = struct {
 const FLY_Z: f64 = 7.0;
 const SEARCH_RESULT_CAP: usize = 12;
 const MIN_PINCH_DIST: f64 = 16.0;
-const PAN_COMMIT_PX: f64 = 192.0;
-const TILE_PAD_PX: f64 = 256.0;
+const PAN_COMMIT_PX: f64 = 384.0;
+const TILE_PAD_PX: f64 = 512.0;
 
 var live_drag: Drag = .{};
 
@@ -469,14 +473,16 @@ fn pointerFocus(client_x: i32, client_y: i32, el_w: f64, el_h: f64) struct { x: 
 fn capturePointer(pointer_id: i32) void {
     if (!zx.platform.isClient()) return;
     const document = zx.client.Document.init(zx.allocator);
+    defer document.deinit();
     const el = document.getElementById("map-stage") catch return;
     defer el.deinit();
     el.ref.call(void, "setPointerCapture", .{pointer_id}) catch {};
 }
 
 fn releasePointer(pointer_id: i32) void {
-    if (!zx.platform.isClient() or pointer_id < 0) return;
+    if (!zx.platform.isClient() or pointer_id == NO_POINTER) return;
     const document = zx.client.Document.init(zx.allocator);
+    defer document.deinit();
     const el = document.getElementById("map-stage") catch return;
     defer el.deinit();
     el.ref.call(void, "releasePointerCapture", .{pointer_id}) catch {};
@@ -489,7 +495,12 @@ fn pinchDistance(d: Drag) f64 {
 }
 
 fn isTrackedPointer(d: Drag, pointer_id: i32) bool {
-    return pointer_id == d.pointer_id or pointer_id == d.pointer2_id;
+    if (pointer_id == d.pointer_id) return true;
+    return d.second_active and pointer_id == d.pointer2_id;
+}
+
+fn hasSecondPointer(d: Drag) bool {
+    return d.second_active;
 }
 
 fn endPinchKeepPan(d: *Drag, lifted_id: i32) void {
@@ -501,7 +512,8 @@ fn endPinchKeepPan(d: *Drag, lifted_id: i32) void {
     } else {
         releasePointer(d.pointer2_id);
     }
-    d.pointer2_id = -1;
+    d.pointer2_id = NO_POINTER;
+    d.second_active = false;
     d.last2_x = 0;
     d.last2_y = 0;
     d.last_pinch_dist = 0;
@@ -554,11 +566,15 @@ fn flushCamPreview() void {
     if (cam_preview.clear_hover) next.tip.hovered = null;
     cam_preview.active = false;
     cam_preview.clear_hover = false;
-    clearWorldTransform();
+    // Commit camera before clearing the live transform so the DOM never
+    // briefly shows the pre-gesture camera (black flash / snap-back).
     state.set(next);
+    clearWorldTransform();
 }
 
-fn queueCamPreview(state: *zx.State(State), base: Camera, live: Camera, clear_hover: bool) void {
+/// Live CSS camera preview without scheduling a DOM commit. Used for pinch so
+/// mid-gesture zoom does not rebuild tiles every move.
+fn updateCamPreviewLive(state: *zx.State(State), base: Camera, live: Camera, clear_hover: bool) void {
     if (!cam_preview.active) {
         cam_preview.base = base;
         cam_preview.active = true;
@@ -567,13 +583,13 @@ fn queueCamPreview(state: *zx.State(State), base: Camera, live: Camera, clear_ho
     cam_preview.state = state;
     if (clear_hover) cam_preview.clear_hover = true;
     setWorldCamPreview(cam_preview.base, cam_preview.live);
-    if (cam_preview.scheduled) return;
-    cam_preview.scheduled = true;
-    _ = zx.client.setTimeout(&flushCamPreview, 0);
 }
 
 fn flushCamPreviewNow() void {
-    if (!cam_preview.active) return;
+    if (!cam_preview.active) {
+        cam_preview.scheduled = false;
+        return;
+    }
     flushCamPreview();
 }
 
@@ -588,11 +604,18 @@ fn visualPanCamera(base: Camera, d: *Drag, el_w: f64, el_h: f64) Camera {
     return clamped;
 }
 
-fn commitWorldPan(cam: *Camera, d: *Drag, el_w: f64, el_h: f64) void {
+fn applyWorldPan(cam: *Camera, d: *Drag, el_w: f64, el_h: f64) void {
     if (d.world_dx == 0 and d.world_dy == 0) return;
-    cam.* = visualPanCamera(cam.*, d, el_w, el_h);
+    var preview = cam.*;
+    preview.x -= d.world_dx;
+    preview.y -= d.world_dy;
+    cam.* = clampCamera(preview, el_w, el_h);
     d.world_dx = 0;
     d.world_dy = 0;
+}
+
+fn commitWorldPan(cam: *Camera, d: *Drag, el_w: f64, el_h: f64) void {
+    applyWorldPan(cam, d, el_w, el_h);
     clearWorldTransform();
 }
 
@@ -652,9 +675,18 @@ pub fn onWheel(e: *zx.client.Event.Stateful) void {
     var next = state.get();
     refreshStageCache();
     const size = stageSize();
-    commitWorldPan(&next.camera, &live_drag, size.w, size.h);
-    live_drag = .{};
-    next.drag = .{};
+
+    if (live_drag.world_dx != 0 or live_drag.world_dy != 0) {
+        applyWorldPan(&next.camera, &live_drag, size.w, size.h);
+        live_drag = .{};
+        next.drag = .{};
+        state.set(next);
+        clearWorldTransform();
+        next = state.get();
+    } else {
+        live_drag = .{};
+        next.drag = .{};
+    }
 
     const we = e.as(zx.client.events.WheelEvent, zx.allocator);
     const committed = clampCamera(next.camera, size.w, size.h);
@@ -672,16 +704,21 @@ pub fn onWheel(e: *zx.client.Event.Stateful) void {
     delta = std.math.clamp(delta, -100.0, 100.0);
 
     const live = zoomTo(base, base.z - delta * sens, focus.x, focus.y, size.w, size.h);
-    queueCamPreview(state, committed, live, false);
+
+    cam_preview = .{};
+    next.camera = live;
+    next.tip.hovered = null;
+    state.set(next);
+    clearWorldTransform();
 }
 
 pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
-    e.preventDefault();
     if (!zx.platform.isClient()) return;
     const state = e.state(State);
     var next = state.get();
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
-    if (pe.button != 0) return;
+    const is_touch = std.mem.eql(u8, pe.pointer_type, "touch");
+    if (!is_touch and pe.button != 0) return;
 
     refreshStageCache();
     flushCamPreviewNow();
@@ -691,10 +728,11 @@ pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
     const size = stageSize();
 
     if (d.active) {
-        if (d.pointer2_id < 0 and pe.pointer_id != d.pointer_id) {
-            commitWorldPan(&next.camera, &d, size.w, size.h);
+        if (!hasSecondPointer(d) and pe.pointer_id != d.pointer_id) {
+            applyWorldPan(&next.camera, &d, size.w, size.h);
             capturePointer(pe.pointer_id);
             d.pointer2_id = pe.pointer_id;
+            d.second_active = true;
             d.last2_x = pe.client_x;
             d.last2_y = pe.client_y;
             d.last_pinch_dist = pinchDistance(d);
@@ -703,6 +741,7 @@ pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
             next.drag = d;
             next.tip.hovered = null;
             state.set(next);
+            clearWorldTransform();
         }
         return;
     }
@@ -732,7 +771,7 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
     var cam = if (cam_preview.active) cam_preview.live else clampCamera(next.camera, size.w, size.h);
 
     if (d.active) {
-        if (d.pointer2_id >= 0) {
+        if (hasSecondPointer(d)) {
             if (!isTrackedPointer(d, pe.pointer_id)) return;
 
             const old_mid_x = @as(f64, @floatFromInt(d.last_x + d.last2_x)) * 0.5;
@@ -767,20 +806,22 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
             cam = clampCamera(cam, size.w, size.h);
             d.last_pinch_dist = new_dist;
             live_drag = d;
-            queueCamPreview(state, clampCamera(next.camera, size.w, size.h), cam, true);
+            updateCamPreviewLive(state, clampCamera(next.camera, size.w, size.h), cam, true);
             return;
         }
 
         if (pe.pointer_id != d.pointer_id) return;
-        if ((pe.buttons & 1) == 0) {
+        const is_touch = std.mem.eql(u8, pe.pointer_type, "touch");
+        if (!is_touch and (pe.buttons & 1) == 0) {
             flushCamPreviewNow();
             next = state.get();
-            commitWorldPan(&next.camera, &d, size.w, size.h);
+            applyWorldPan(&next.camera, &d, size.w, size.h);
             releasePointer(d.pointer_id);
             live_drag = .{};
             next.drag = .{};
             next.camera = clampCamera(next.camera, size.w, size.h);
             state.set(next);
+            clearWorldTransform();
             return;
         }
         const adx = @abs(pe.client_x - d.start_x);
@@ -789,8 +830,11 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
 
         if (d.moved) {
             e.preventDefault();
-            flushCamPreviewNow();
-            next = state.get();
+            // Only flush a pending wheel preview once when the pan starts.
+            if (cam_preview.active) {
+                flushCamPreviewNow();
+                next = state.get();
+            }
             cam = clampCamera(next.camera, size.w, size.h);
             d.world_dx += @as(f64, @floatFromInt(pe.client_x - d.last_x));
             d.world_dy += @as(f64, @floatFromInt(pe.client_y - d.last_y));
@@ -800,11 +844,12 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
             live_drag = d;
 
             if (@abs(d.world_dx) >= PAN_COMMIT_PX or @abs(d.world_dy) >= PAN_COMMIT_PX) {
-                commitWorldPan(&next.camera, &d, size.w, size.h);
+                applyWorldPan(&next.camera, &d, size.w, size.h);
                 live_drag = d;
                 next.drag = d;
                 next.tip.hovered = null;
                 state.set(next);
+                clearWorldTransform();
             }
             return;
         }
@@ -836,7 +881,7 @@ pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
     const size = stageSize();
 
     // One finger of a pinch lifted → keep panning with the remaining finger.
-    if (d.pointer2_id >= 0) {
+    if (hasSecondPointer(d)) {
         endPinchKeepPan(&d, pe.pointer_id);
         live_drag = d;
         next.drag = d;
@@ -845,7 +890,7 @@ pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
     }
 
     releasePointer(d.pointer_id);
-    commitWorldPan(&next.camera, &d, size.w, size.h);
+    applyWorldPan(&next.camera, &d, size.w, size.h);
 
     if (!d.moved) {
         const cam = clampCamera(next.camera, size.w, size.h);
@@ -856,6 +901,7 @@ pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
     live_drag = .{};
     next.drag = .{};
     state.set(next);
+    clearWorldTransform();
 }
 
 pub fn onPointerLeave(e: *zx.client.Event.Stateful) void {
@@ -897,12 +943,13 @@ pub fn onZoomIn(e: *zx.client.Event.Stateful) void {
     var next = state.get();
     refreshStageCache();
     const size = stageSize();
-    commitWorldPan(&next.camera, &live_drag, size.w, size.h);
+    applyWorldPan(&next.camera, &live_drag, size.w, size.h);
     live_drag = .{};
     const cam = clampCamera(next.camera, size.w, size.h);
     next.camera = zoomTo(cam, cam.z + ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h);
     next.drag = .{};
     state.set(next);
+    clearWorldTransform();
 }
 
 pub fn onZoomOut(e: *zx.client.Event.Stateful) void {
@@ -912,12 +959,13 @@ pub fn onZoomOut(e: *zx.client.Event.Stateful) void {
     var next = state.get();
     refreshStageCache();
     const size = stageSize();
-    commitWorldPan(&next.camera, &live_drag, size.w, size.h);
+    applyWorldPan(&next.camera, &live_drag, size.w, size.h);
     live_drag = .{};
     const cam = clampCamera(next.camera, size.w, size.h);
     next.camera = zoomTo(cam, cam.z - ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h);
     next.drag = .{};
     state.set(next);
+    clearWorldTransform();
 }
 
 pub fn onReset(e: *zx.client.Event.Stateful) void {
