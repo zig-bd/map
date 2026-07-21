@@ -104,11 +104,62 @@ pub const Search = struct {
     }
 };
 
+pub const JoinField = struct {
+    bytes: [192]u8 = undefined,
+    len: usize = 0,
+
+    pub fn text(self: *const JoinField) []const u8 {
+        return self.bytes[0..self.len];
+    }
+
+    fn set(self: *JoinField, value: []const u8) void {
+        const n = @min(value.len, self.bytes.len);
+        if (n > 0) @memcpy(self.bytes[0..n], value[0..n]);
+        self.len = n;
+    }
+};
+
+pub const JoinLink = struct {
+    label: JoinField = .{},
+    href: JoinField = .{},
+};
+
+pub const JoinLocationMode = enum { city, automatic, manual };
+pub const JoinError = enum { none, username, location, links, geolocation };
+pub const MAX_JOIN_LINKS: usize = 4;
+
+pub const Join = struct {
+    open: bool = false,
+    username: JoinField = .{},
+    location_mode: JoinLocationMode = .city,
+    city_index: ?usize = null,
+    lat: JoinField = .{},
+    lng: JoinField = .{},
+    links: [MAX_JOIN_LINKS]JoinLink = @splat(.{}),
+    link_count: usize = 1,
+    err: JoinError = .none,
+};
+
+pub const City = struct {
+    name: []const u8,
+    country: []const u8,
+    lat: f64,
+    lng: f64,
+};
+
+pub const Places = struct {
+    places: []const City,
+};
+
+pub const places: Places = @import("places.zon");
+pub const cities = places.places;
+
 pub const State = struct {
     camera: Camera,
     drag: Drag = .{},
     tip: Tip = .{},
     search: Search = .{},
+    join: Join = .{},
 };
 
 pub const TileView = struct {
@@ -570,6 +621,7 @@ pub fn onSearchToggle(e: *zx.client.Event.Stateful) void {
     var next = state.get();
     next.search.open = !next.search.open;
     if (!next.search.open) next.search.len = 0;
+    if (next.search.open) next.join.open = false;
     state.set(next);
     if (next.search.open) focusSearchInput();
 }
@@ -609,6 +661,384 @@ pub fn onSelectUser(e: *zx.client.Event.Stateful) void {
     focusUser(&next, user_index, size.w, size.h);
     next.search = .{};
     state.set(next);
+}
+
+fn focusJoinUsername() void {
+    if (!zx.platform.isClient()) return;
+    const document = zx.client.Document.init(zx.allocator);
+    const input = document.getElementById("map-join-username") catch return;
+    defer input.deinit();
+    input.ref.call(void, "focus", .{}) catch {};
+}
+
+fn fieldName(e: *zx.client.Event.Stateful) ?[]const u8 {
+    const event = e.getEvent();
+    const current = event.ref.get(@import("js").Object, "currentTarget") catch return null;
+    defer current.deinit();
+    return current.getAlloc(@import("js").String, zx.allocator, "name") catch null;
+}
+
+pub fn onJoinToggle(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    next.join.open = !next.join.open;
+    if (next.join.open) {
+        next.search.open = false;
+        next.search.len = 0;
+        next.join.err = .none;
+    }
+    state.set(next);
+    if (next.join.open) focusJoinUsername();
+}
+
+pub fn onJoinUsername(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    next.join.username.set(e.value() orelse "");
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn onJoinMode(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    const raw = e.value() orelse return;
+    next.join.location_mode = std.meta.stringToEnum(JoinLocationMode, raw) orelse return;
+    next.join.err = .none;
+    if (next.join.location_mode != .city) next.join.city_index = null;
+    state.set(next);
+}
+
+pub fn onJoinCity(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    const raw = e.value() orelse return;
+    if (raw.len == 0) {
+        next.join.city_index = null;
+    } else {
+        next.join.city_index = std.fmt.parseInt(usize, raw, 10) catch return;
+        if (next.join.city_index.? >= cities.len) next.join.city_index = null;
+    }
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn onJoinLat(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    next.join.lat.set(e.value() orelse "");
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn onJoinLng(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    next.join.lng.set(e.value() orelse "");
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn onJoinDetect(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    next.join.err = .none;
+    state.set(next);
+    _ = zx.client.eval(void,
+        \\navigator.geolocation.getCurrentPosition(function(p){
+        \\  var lat=document.getElementById('map-join-lat');
+        \\  var lng=document.getElementById('map-join-lng');
+        \\  if(!lat||!lng)return;
+        \\  lat.value=String(p.coords.latitude);
+        \\  lng.value=String(p.coords.longitude);
+        \\  lat.dispatchEvent(new Event('input',{bubbles:true}));
+        \\  lng.dispatchEvent(new Event('input',{bubbles:true}));
+        \\},function(){
+        \\  var err=document.getElementById('map-join-geo-err');
+        \\  if(err){err.hidden=false;}
+        \\},{enableHighAccuracy:false,timeout:10000});
+    ) catch {};
+}
+
+pub fn onJoinAddLink(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    if (next.join.link_count < MAX_JOIN_LINKS) next.join.link_count += 1;
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn onJoinRemoveLink(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    const raw = e.value() orelse return;
+    const idx = std.fmt.parseInt(usize, raw, 10) catch return;
+    if (idx >= next.join.link_count) return;
+    var i = idx;
+    while (i + 1 < next.join.link_count) : (i += 1) {
+        next.join.links[i] = next.join.links[i + 1];
+    }
+    next.join.links[next.join.link_count - 1] = .{};
+    next.join.link_count -= 1;
+    if (next.join.link_count == 0) next.join.link_count = 1;
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn onJoinLinkLabel(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const idx = std.fmt.parseInt(usize, fieldName(e) orelse return, 10) catch return;
+    if (idx >= MAX_JOIN_LINKS) return;
+    const state = e.state(State);
+    var next = state.get();
+    next.join.links[idx].label.set(e.value() orelse "");
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn onJoinLinkHref(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    if (!zx.platform.isClient()) return;
+    const idx = std.fmt.parseInt(usize, fieldName(e) orelse return, 10) catch return;
+    if (idx >= MAX_JOIN_LINKS) return;
+    const state = e.state(State);
+    var next = state.get();
+    next.join.links[idx].href.set(e.value() orelse "");
+    next.join.err = .none;
+    state.set(next);
+}
+
+fn trimAscii(s: []const u8) []const u8 {
+    var start: usize = 0;
+    var end = s.len;
+    while (start < end and std.ascii.isWhitespace(s[start])) start += 1;
+    while (end > start and std.ascii.isWhitespace(s[end - 1])) end -= 1;
+    return s[start..end];
+}
+
+fn isValidNick(s: []const u8) bool {
+    if (s.len == 0 or s.len > 64) return false;
+    for (s) |c| {
+        const ok = std.ascii.isAlphanumeric(c) or c == '-' or c == '_' or c == '.' or c == ' ';
+        if (!ok) return false;
+    }
+    return true;
+}
+
+fn appendJsonString(out: *std.ArrayListUnmanaged(u8), allocator: zx.Allocator, s: []const u8) !void {
+    try out.append(allocator, '"');
+    for (s) |c| {
+        switch (c) {
+            '"' => try out.appendSlice(allocator, "\\\""),
+            '\\' => try out.appendSlice(allocator, "\\\\"),
+            '\n' => try out.appendSlice(allocator, "\\n"),
+            '\r' => try out.appendSlice(allocator, "\\r"),
+            '\t' => try out.appendSlice(allocator, "\\t"),
+            else => {
+                if (c < 0x20) {
+                    var buf: [6]u8 = undefined;
+                    const piece = try std.fmt.bufPrint(&buf, "\\u{x:0>4}", .{c});
+                    try out.appendSlice(allocator, piece);
+                } else {
+                    try out.append(allocator, c);
+                }
+            },
+        }
+    }
+    try out.append(allocator, '"');
+}
+
+fn percentEncode(allocator: zx.Allocator, s: []const u8) ![]const u8 {
+    var out: std.ArrayListUnmanaged(u8) = .empty;
+    errdefer out.deinit(allocator);
+    for (s) |c| {
+        const unreserved = std.ascii.isAlphanumeric(c) or c == '-' or c == '_' or c == '.' or c == '~';
+        if (unreserved) {
+            try out.append(allocator, c);
+        } else {
+            var buf: [3]u8 = undefined;
+            const piece = try std.fmt.bufPrint(&buf, "%{X:0>2}", .{c});
+            try out.appendSlice(allocator, piece);
+        }
+    }
+    return try out.toOwnedSlice(allocator);
+}
+
+fn sanitizeFilename(allocator: zx.Allocator, nick: []const u8) ![]const u8 {
+    var out: std.ArrayListUnmanaged(u8) = .empty;
+    errdefer out.deinit(allocator);
+    for (nick) |c| {
+        if (std.ascii.isAlphanumeric(c) or c == '-' or c == '_' or c == '.') {
+            try out.append(allocator, c);
+        } else if (c == ' ') {
+            try out.append(allocator, '-');
+        }
+    }
+    if (out.items.len == 0) try out.appendSlice(allocator, "zigiana");
+    return try out.toOwnedSlice(allocator);
+}
+
+const JoinCoords = struct { lat: f64, lng: f64 };
+
+fn resolveJoinCoords(join: Join) ?JoinCoords {
+    return switch (join.location_mode) {
+        .city => blk: {
+            const idx = join.city_index orelse break :blk null;
+            if (idx >= cities.len) break :blk null;
+            break :blk .{ .lat = cities[idx].lat, .lng = cities[idx].lng };
+        },
+        .automatic, .manual => blk: {
+            const lat = std.fmt.parseFloat(f64, trimAscii(join.lat.text())) catch break :blk null;
+            const lng = std.fmt.parseFloat(f64, trimAscii(join.lng.text())) catch break :blk null;
+            if (!std.math.isFinite(lat) or !std.math.isFinite(lng)) break :blk null;
+            if (lat < -90 or lat > 90 or lng < -180 or lng > 180) break :blk null;
+            break :blk .{ .lat = lat, .lng = lng };
+        },
+    };
+}
+
+// Manually serializing to avoid including std.json into the wasm which bloats the size
+fn buildPersonJson(allocator: zx.Allocator, join: Join, coords: JoinCoords) ![]const u8 {
+    var out: std.ArrayListUnmanaged(u8) = .empty;
+    errdefer out.deinit(allocator);
+    try out.appendSlice(allocator, "{\n  \"nick\": ");
+    try appendJsonString(&out, allocator, trimAscii(join.username.text()));
+    try out.appendSlice(allocator, ",\n  \"coordinates\": [\n    ");
+    var num: [64]u8 = undefined;
+    try out.appendSlice(allocator, try std.fmt.bufPrint(&num, "{d}", .{coords.lat}));
+    try out.appendSlice(allocator, ",\n    ");
+    try out.appendSlice(allocator, try std.fmt.bufPrint(&num, "{d}", .{coords.lng}));
+    try out.appendSlice(allocator, "\n  ]");
+
+    var first_link = true;
+    for (join.links[0..join.link_count]) |link| {
+        const label = trimAscii(link.label.text());
+        const href = trimAscii(link.href.text());
+        if (label.len == 0 and href.len == 0) continue;
+        if (label.len == 0 or href.len == 0) return error.IncompleteLink;
+        if (first_link) {
+            try out.appendSlice(allocator, ",\n  \"links\": {\n");
+            first_link = false;
+        } else {
+            try out.appendSlice(allocator, ",\n");
+        }
+        try out.appendSlice(allocator, "    ");
+        try appendJsonString(&out, allocator, label);
+        try out.appendSlice(allocator, ": ");
+        try appendJsonString(&out, allocator, href);
+    }
+    if (!first_link) try out.appendSlice(allocator, "\n  }");
+    try out.appendSlice(allocator, "\n}\n");
+    return try out.toOwnedSlice(allocator);
+}
+
+fn openGithubNewFile(allocator: zx.Allocator, filename: []const u8, contents: []const u8) !void {
+    const enc_name = try percentEncode(allocator, filename);
+    const enc_value = try percentEncode(allocator, contents);
+    const url = try std.fmt.allocPrint(
+        allocator,
+        "https://github.com/zig-community/user-map/new/master/people?filename={s}&value={s}",
+        .{ enc_name, enc_value },
+    );
+    const js = @import("js");
+    const win = try js.global.get(js.Object, "window");
+    defer win.deinit();
+    try win.call(void, "open", .{ js.string(url), js.string("_blank"), js.string("noopener,noreferrer") });
+}
+
+pub fn onJoinSubmit(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!zx.platform.isClient()) return;
+    const state = e.state(State);
+    var next = state.get();
+    const nick = trimAscii(next.join.username.text());
+    if (!isValidNick(nick)) {
+        next.join.err = .username;
+        state.set(next);
+        return;
+    }
+    const coords = resolveJoinCoords(next.join) orelse {
+        next.join.err = .location;
+        state.set(next);
+        return;
+    };
+    for (next.join.links[0..next.join.link_count]) |link| {
+        const label = trimAscii(link.label.text());
+        const href = trimAscii(link.href.text());
+        if ((label.len == 0) != (href.len == 0)) {
+            next.join.err = .links;
+            state.set(next);
+            return;
+        }
+    }
+
+    const json = buildPersonJson(zx.allocator, next.join, coords) catch {
+        next.join.err = .links;
+        state.set(next);
+        return;
+    };
+    const base = sanitizeFilename(zx.allocator, nick) catch {
+        next.join.err = .username;
+        state.set(next);
+        return;
+    };
+    const filename = std.fmt.allocPrint(zx.allocator, "{s}.json", .{base}) catch {
+        next.join.err = .username;
+        state.set(next);
+        return;
+    };
+    openGithubNewFile(zx.allocator, filename, json) catch {
+        next.join.err = .links;
+        state.set(next);
+        return;
+    };
+    next.join.err = .none;
+    state.set(next);
+}
+
+pub fn joinErrorText(err: JoinError) []const u8 {
+    return switch (err) {
+        .none => "",
+        .username => "Enter a username (letters, numbers, spaces, - _ .)",
+        .location => "Pick a city or enter valid latitude and longitude",
+        .links => "Each link needs both a label and a URL",
+        .geolocation => "Could not detect your location",
+    };
+}
+
+pub fn fmtFieldValue(allocator: zx.Allocator, field: JoinField) []const u8 {
+    return std.fmt.allocPrint(allocator, "{s}", .{field.text()}) catch "";
+}
+
+pub fn fmtCityOption(allocator: zx.Allocator, index: usize) []const u8 {
+    return std.fmt.allocPrint(allocator, "{d}", .{index}) catch "0";
+}
+
+pub fn fmtCityLabel(allocator: zx.Allocator, city: City) []const u8 {
+    return std.fmt.allocPrint(allocator, "{s}, {s}", .{ city.name, city.country }) catch city.name;
 }
 
 pub fn fmtTileSrc(allocator: zx.Allocator, tile: TileView) []const u8 {

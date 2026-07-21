@@ -20,6 +20,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     const cam = map.clampCamera(state_v.camera, size.w, size.h);
     const tip_v = state_v.tip;
     const search_v = state_v.search;
+    const join_v = state_v.join;
     const hover_only: ?usize = if (tip_v.selected != null) null else tip_v.hovered;
 
     var parent_tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
@@ -154,6 +155,15 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 >
                     <component.CircleIcon />
                 </button>
+                <button
+                    type="button"
+                    class={if (join_v.open) "map-ctrl is-active" else "map-ctrl"}
+                    onclick={ctx.bind(map.onJoinToggle)}
+                    aria-label="Add yourself to the map"
+                    aria-expanded={if (join_v.open) "true" else "false"}
+                >
+                    <component.AddUserIcon />
+                </button>
             </div>
 
             {if (search_v.open) (
@@ -195,6 +205,122 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                             )}
                         </ul>
                     )}
+                </div>
+            )}
+
+            {if (join_v.open) (
+                <div
+                    class="map-join"
+                    onpointerdown={ctx.bind(map.onControlsPointer)}
+                    onwheel={ctx.bind(map.onDockWheel)}
+                >
+                    <p class="map-join-title">Add yourself</p>
+                    <p class="map-join-sub">Opens a GitHub PR draft for zig-community/user-map</p>
+
+                    <label class="map-join-label" for="map-join-username">Username</label>
+                    <input
+                        id="map-join-username"
+                        class="map-join-input"
+                        type="text"
+                        placeholder="your nickname"
+                        value={map.fmtFieldValue(ctx.allocator, join_v.username)}
+                        oninput={ctx.bind(map.onJoinUsername)}
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+
+                    <span class="map-join-label">Location</span>
+                    <div class="map-join-modes" role="group" aria-label="Location mode">
+                        <button type="button" class={if (join_v.location_mode == .city) "map-join-mode is-active" else "map-join-mode"} value="city" onclick={ctx.bind(map.onJoinMode)}>City</button>
+                        <button type="button" class={if (join_v.location_mode == .automatic) "map-join-mode is-active" else "map-join-mode"} value="automatic" onclick={ctx.bind(map.onJoinMode)}>Detect</button>
+                        <button type="button" class={if (join_v.location_mode == .manual) "map-join-mode is-active" else "map-join-mode"} value="manual" onclick={ctx.bind(map.onJoinMode)}>Lat/Lng</button>
+                    </div>
+
+                    {if (join_v.location_mode == .city) (
+                        <select class="map-join-input" onchange={ctx.bind(map.onJoinCity)} aria-label="City">
+                            <option value="">Select a city…</option>
+                            {for (map.cities, 0..) |city, i| (
+                                <option
+                                    value={map.fmtCityOption(ctx.allocator, i)}
+                                    selected={if (join_v.city_index) |ci| if (ci == i) "selected" else null else null}
+                                >{map.fmtCityLabel(ctx.allocator, city)}</option>
+                            )}
+                        </select>
+                    ) else (
+                        <div class="map-join-coords">
+                            {if (join_v.location_mode == .automatic) (
+                                <button type="button" class="map-join-detect" onclick={ctx.bind(map.onJoinDetect)}>Use my location</button>
+                            ) else ""}
+                            <input
+                                id="map-join-lat"
+                                class="map-join-input"
+                                type="text"
+                                inputmode="decimal"
+                                placeholder="Latitude"
+                                value={map.fmtFieldValue(ctx.allocator, join_v.lat)}
+                                oninput={ctx.bind(map.onJoinLat)}
+                                autocomplete="off"
+                            />
+                            <input
+                                id="map-join-lng"
+                                class="map-join-input"
+                                type="text"
+                                inputmode="decimal"
+                                placeholder="Longitude"
+                                value={map.fmtFieldValue(ctx.allocator, join_v.lng)}
+                                oninput={ctx.bind(map.onJoinLng)}
+                                autocomplete="off"
+                            />
+                            <p id="map-join-geo-err" class="map-join-error" hidden="true">Could not detect your location</p>
+                        </div>
+                    )}
+
+                    <div class="map-join-links-head">
+                        <span class="map-join-label">Links</span>
+                        <button
+                            type="button"
+                            class="map-join-add-link"
+                            onclick={ctx.bind(map.onJoinAddLink)}
+                            disabled={if (join_v.link_count >= map.MAX_JOIN_LINKS) "disabled" else null}
+                            aria-label="Add link"
+                        >+</button>
+                    </div>
+                    {for (join_v.links[0..join_v.link_count], 0..) |link, i| (
+                        <div class="map-join-link-row">
+                            <input
+                                class="map-join-input map-join-link-label"
+                                type="text"
+                                name={map.fmtIndex(ctx.allocator, i)}
+                                placeholder="Label"
+                                value={map.fmtFieldValue(ctx.allocator, link.label)}
+                                oninput={ctx.bind(map.onJoinLinkLabel)}
+                                autocomplete="off"
+                            />
+                            <input
+                                class="map-join-input map-join-link-href"
+                                type="url"
+                                name={map.fmtIndex(ctx.allocator, i)}
+                                placeholder="https://"
+                                value={map.fmtFieldValue(ctx.allocator, link.href)}
+                                oninput={ctx.bind(map.onJoinLinkHref)}
+                                autocomplete="off"
+                            />
+                            <button
+                                type="button"
+                                class="map-join-remove-link"
+                                value={map.fmtIndex(ctx.allocator, i)}
+                                onclick={ctx.bind(map.onJoinRemoveLink)}
+                                disabled={if (join_v.link_count <= 1) "disabled" else null}
+                                aria-label="Remove link"
+                            >×</button>
+                        </div>
+                    )}
+
+                    {if (join_v.err != .none) (
+                        <p class="map-join-error">{map.joinErrorText(join_v.err)}</p>
+                    ) else ""}
+
+                    <button type="button" class="map-join-submit" onclick={ctx.bind(map.onJoinSubmit)}>Open GitHub PR</button>
                 </div>
             )}
 
