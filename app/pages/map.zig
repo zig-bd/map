@@ -87,6 +87,10 @@ pub const Drag = struct {
     start_x: i32 = 0,
     start_y: i32 = 0,
     pointer_id: i32 = -1,
+    pointer2_id: i32 = -1,
+    last2_x: i32 = 0,
+    last2_y: i32 = 0,
+    last_pinch_dist: f64 = 0,
 };
 
 pub const Tip = struct {
@@ -181,6 +185,7 @@ pub const DockEntry = struct {
 
 const FLY_Z: f64 = 7.0;
 const SEARCH_RESULT_CAP: usize = 12;
+const MIN_PINCH_DIST: f64 = 16.0;
 
 fn skipState(e: *zx.client.Event.Stateful) void {
     _ = e.state(State);
@@ -398,6 +403,33 @@ fn releasePointer(pointer_id: i32) void {
     el.ref.call(void, "releasePointerCapture", .{pointer_id}) catch {};
 }
 
+fn pinchDistance(d: Drag) f64 {
+    const dx = @as(f64, @floatFromInt(d.last2_x - d.last_x));
+    const dy = @as(f64, @floatFromInt(d.last2_y - d.last_y));
+    return @sqrt(dx * dx + dy * dy);
+}
+
+fn isTrackedPointer(d: Drag, pointer_id: i32) bool {
+    return pointer_id == d.pointer_id or pointer_id == d.pointer2_id;
+}
+
+fn endPinchKeepPan(d: *Drag, lifted_id: i32) void {
+    if (lifted_id == d.pointer_id) {
+        releasePointer(d.pointer_id);
+        d.pointer_id = d.pointer2_id;
+        d.last_x = d.last2_x;
+        d.last_y = d.last2_y;
+    } else {
+        releasePointer(d.pointer2_id);
+    }
+    d.pointer2_id = -1;
+    d.last2_x = 0;
+    d.last2_y = 0;
+    d.last_pinch_dist = 0;
+    d.start_x = d.last_x;
+    d.start_y = d.last_y;
+}
+
 fn firstPinForUser(user_index: usize) ?usize {
     for (pins, 0..) |pin, i| {
         if (pin.user_index == user_index) return i;
@@ -479,6 +511,24 @@ pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
     var next = state.get();
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
     if (pe.button != 0) return;
+
+    var d = next.drag;
+    if (d.active) {
+        // Second finger → start pinch-zoom.
+        if (d.pointer2_id < 0 and pe.pointer_id != d.pointer_id) {
+            capturePointer(pe.pointer_id);
+            d.pointer2_id = pe.pointer_id;
+            d.last2_x = pe.client_x;
+            d.last2_y = pe.client_y;
+            d.last_pinch_dist = pinchDistance(d);
+            d.moved = true;
+            next.drag = d;
+            next.tip.hovered = null;
+            state.set(next);
+        }
+        return;
+    }
+
     capturePointer(pe.pointer_id);
     next.drag = .{
         .active = true,
@@ -502,6 +552,47 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
     var cam = clampCamera(next.camera, size.w, size.h);
 
     if (d.active) {
+        if (d.pointer2_id >= 0) {
+            if (!isTrackedPointer(d, pe.pointer_id)) return;
+
+            const old_mid_x = @as(f64, @floatFromInt(d.last_x + d.last2_x)) * 0.5;
+            const old_mid_y = @as(f64, @floatFromInt(d.last_y + d.last2_y)) * 0.5;
+            const old_dist = d.last_pinch_dist;
+
+            if (pe.pointer_id == d.pointer_id) {
+                d.last_x = pe.client_x;
+                d.last_y = pe.client_y;
+            } else {
+                d.last2_x = pe.client_x;
+                d.last2_y = pe.client_y;
+            }
+
+            const new_dist = pinchDistance(d);
+            const new_mid_x = @as(f64, @floatFromInt(d.last_x + d.last2_x)) * 0.5;
+            const new_mid_y = @as(f64, @floatFromInt(d.last_y + d.last2_y)) * 0.5;
+
+            e.preventDefault();
+            if (old_dist >= MIN_PINCH_DIST and new_dist >= MIN_PINCH_DIST) {
+                const focus = pointerFocus(
+                    @intFromFloat(old_mid_x),
+                    @intFromFloat(old_mid_y),
+                    size.w,
+                    size.h,
+                );
+                const dz = std.math.log2(new_dist / old_dist);
+                cam = zoomTo(cam, cam.z + dz, focus.x, focus.y, size.w, size.h);
+            }
+            cam.x -= new_mid_x - old_mid_x;
+            cam.y -= new_mid_y - old_mid_y;
+            next.camera = clampCamera(cam, size.w, size.h);
+            next.tip.hovered = null;
+            d.last_pinch_dist = new_dist;
+            next.drag = d;
+            state.set(next);
+            return;
+        }
+
+        if (pe.pointer_id != d.pointer_id) return;
         if ((pe.buttons & 1) == 0) {
             releasePointer(d.pointer_id);
             d.active = false;
@@ -539,10 +630,20 @@ pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
     const state = e.state(State);
     var next = state.get();
-    const d = next.drag;
+    var d = next.drag;
     if (!d.active) return;
 
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
+    if (!isTrackedPointer(d, pe.pointer_id)) return;
+
+    // One finger of a pinch lifted → keep panning with the remaining finger.
+    if (d.pointer2_id >= 0) {
+        endPinchKeepPan(&d, pe.pointer_id);
+        next.drag = d;
+        state.set(next);
+        return;
+    }
+
     releasePointer(d.pointer_id);
 
     if (!d.moved) {
