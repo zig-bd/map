@@ -4,10 +4,11 @@ const zx = @import("zx");
 const component = @import("component.zx");
 const map = @import("map.zig");
 
-pub fn Page(ctx: zx.PageContext) zx.Component {
+pub fn Page(ctx: zx.PageContext) !zx.Component {
+    const rand_id = try ctx.fmt("{x}", .{randInt(zx.io(), u32)});
     return (
         <main class="map-root" @allocator={ctx.arena}>
-            <link rel="stylesheet" href="/assets/map.css" />
+            <link rel="stylesheet" href=`/assets/map.css?v={rand_id}` />
             <UsersMap @rendering={.client} />
         </main>
     );
@@ -369,4 +370,10 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
             </p>
         </div>
     );
+}
+
+pub fn randInt(io: std.Io, comptime T: type) T {
+    var x: T = undefined;
+    io.random(@ptrCast(&x));
+    return x;
 }
