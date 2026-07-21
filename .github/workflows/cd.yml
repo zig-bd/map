@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'app/**'
+      - 'build.zig.zon'
+      - 'build.zig'
+      - '.github/workflows/cd.yml'
 
   workflow_dispatch:
 
