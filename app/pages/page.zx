@@ -24,6 +24,10 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     const tip_v = state_v.tip;
     const search_v = state_v.search;
     const join_v = state_v.join;
+    const cities = map.initPlaces(
+        ctx.state(map.Places, .{ .places = &.{} }),
+        join_v.open,
+    );
     const hover_only: ?usize = if (tip_v.selected != null) null else tip_v.hovered;
 
     var parent_tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
@@ -96,14 +100,14 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 <div class="map-pins" aria-hidden="true">
                     {for (visible_pin_indices.items) |i| (
                         <div
-                            key={map.fmtIndex(ctx.allocator, i)}
+                            key={i}
                             class={map.pinClass(tip_v, i, map.pins[i])}
                             style={map.fmtPinStyle(ctx.allocator, map.pins[i], cam)}
                         >
                             {if (map.pins[i].mascot) |m| (
                                 <img
                                     class="map-pin-mascot"
-                                    src={map.fmtMascotSrc(ctx.allocator, m)}
+                                    src=`/assets/branding/{@tagName(m)}.svg`
                                     alt=""
                                     draggable="false"
                                 />
@@ -189,7 +193,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                             class="map-search-input"
                             type="search"
                             placeholder="Search username…"
-                            value={map.fmtQueryValue(ctx.allocator, search_v)}
+                            value={search_v.text()}
                             oninput={ctx.bind(map.onSearchInput)}
                             autocomplete="off"
                             autocapitalize="off"
@@ -209,7 +213,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                                     <button
                                         type="button"
                                         class="map-search-hit"
-                                        value={map.fmtIndex(ctx.allocator, ui)}
+                                        value={ui}
                                         onclick={ctx.bind(map.onSelectUser)}
                                     >{map.users.users[ui].username}</button>
                                 </li>
@@ -220,8 +224,9 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
             )}
 
             {if (join_v.open) (
-                <div
+                <form
                     class="map-join"
+                    action={ctx.bind(map.onJoinSubmit)}
                     onpointerdown={ctx.bind(map.onControlsPointer)}
                     onwheel={ctx.bind(map.onDockWheel)}
                 >
@@ -233,9 +238,9 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                         id="map-join-username"
                         class="map-join-input"
                         type="text"
+                        name="username"
                         placeholder="your nickname"
                         value={map.fmtFieldValue(ctx.allocator, join_v.username)}
-                        oninput={ctx.bind(map.onJoinUsername)}
                         autocomplete="off"
                         spellcheck="false"
                     />
@@ -248,9 +253,15 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                     </div>
 
                     {if (join_v.location_mode == .city) (
-                        <select class="map-join-input" onchange={ctx.bind(map.onJoinCity)} aria-label="City">
-                            <option value="">Select a city…</option>
-                            {for (map.cities, 0..) |city, i| (
+                        <select
+                            class="map-join-input"
+                            name="city"
+                            aria-label="City"
+                            disabled={if (cities.len == 0) "disabled" else null}
+                            aria-busy={if (cities.len == 0) "true" else "false"}
+                        >
+                            <option value="">{if (cities.len == 0) "Loading cities…" else "Select a city…"}</option>
+                            {for (cities, 0..) |city, i| (
                                 <option
                                     value={map.fmtCityOption(ctx.allocator, i)}
                                     selected={if (join_v.city_index) |ci| if (ci == i) "selected" else null else null}
@@ -266,20 +277,20 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                                 id="map-join-lat"
                                 class="map-join-input"
                                 type="text"
+                                name="lat"
                                 inputmode="decimal"
                                 placeholder="Latitude"
                                 value={map.fmtFieldValue(ctx.allocator, join_v.lat)}
-                                oninput={ctx.bind(map.onJoinLat)}
                                 autocomplete="off"
                             />
                             <input
                                 id="map-join-lng"
                                 class="map-join-input"
                                 type="text"
+                                name="lng"
                                 inputmode="decimal"
                                 placeholder="Longitude"
                                 value={map.fmtFieldValue(ctx.allocator, join_v.lng)}
-                                oninput={ctx.bind(map.onJoinLng)}
                                 autocomplete="off"
                             />
                             <p id="map-join-geo-err" class="map-join-error" hidden="true">Could not detect your location</p>
@@ -299,18 +310,20 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                     {for (join_v.links[0..join_v.link_count], 0..) |link, i| (
                         <div class="map-join-link-row">
                             <input
+                                id={map.fmtJoinLinkId(ctx.allocator, .label, i)}
                                 class="map-join-input map-join-link-label"
                                 type="text"
-                                name={map.fmtIndex(ctx.allocator, i)}
+                                name="link_label"
                                 placeholder="Label"
                                 value={map.fmtFieldValue(ctx.allocator, link.label)}
                                 oninput={ctx.bind(map.onJoinLinkLabel)}
                                 autocomplete="off"
                             />
                             <input
+                                id={map.fmtJoinLinkId(ctx.allocator, .href, i)}
                                 class="map-join-input map-join-link-href"
                                 type="url"
-                                name={map.fmtIndex(ctx.allocator, i)}
+                                name="link_href"
                                 placeholder="https://"
                                 value={map.fmtFieldValue(ctx.allocator, link.href)}
                                 oninput={ctx.bind(map.onJoinLinkHref)}
@@ -319,7 +332,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                             <button
                                 type="button"
                                 class="map-join-remove-link"
-                                value={map.fmtIndex(ctx.allocator, i)}
+                                value={i}
                                 onclick={ctx.bind(map.onJoinRemoveLink)}
                                 disabled={if (join_v.link_count <= 1) "disabled" else null}
                                 aria-label="Remove link"
@@ -331,8 +344,8 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                         <p class="map-join-error">{map.joinErrorText(join_v.err)}</p>
                     ) else ""}
 
-                    <button type="button" class="map-join-submit" onclick={ctx.bind(map.onJoinSubmit)}>Open GitHub PR</button>
-                </div>
+                    <button type="submit" class="map-join-submit">Open GitHub PR</button>
+                </form>
             )}
 
             <aside
@@ -343,7 +356,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
             >
                 <div class="map-dock-head">
                     <span class="map-dock-title">Ziguanas in view</span>
-                    <span class="map-dock-count">{map.fmtCount(ctx.allocator, dock.items.len)}</span>
+                    <span class="map-dock-count">{dock.items.len}</span>
                 </div>
                 {if (dock.items.len == 0) (
                     <p class="map-dock-empty">No ziguanas here, zoom out or pan to find them</p>
@@ -354,7 +367,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                                 <button
                                     type="button"
                                     class="map-dock-item"
-                                    value={map.fmtIndex(ctx.allocator, entry.user_index)}
+                                    value={entry.user_index}
                                     onclick={ctx.bind(map.onSelectUser)}
                                 >
                                     <span class="map-dock-name">{entry.username}</span>
@@ -365,7 +378,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                             </li>
                         )}
                         {if (dock_hidden > 0) (
-                            <li class="map-dock-more">+ {map.fmtCount(ctx.allocator, dock_hidden)}</li>
+                            <li class="map-dock-more">+ {dock_hidden}</li>
                         )}
                     </ul>
                 )}
