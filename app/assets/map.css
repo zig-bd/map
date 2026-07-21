@@ -398,11 +398,14 @@ body {
     white-space: nowrap;
 }
 
-.map-tip-links a + a::before {
-    content: "·";
+.map-tip-link {
+    display: inline-flex;
+    align-items: baseline;
+}
+
+.map-tip-link-separator {
     margin: 0 0.4rem;
     color: rgba(168, 180, 200, 0.55);
-    pointer-events: none;
 }
 
 .map-tip-links a:hover,

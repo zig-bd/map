@@ -103,6 +103,13 @@ pub const Search = struct {
     }
 };
 
+pub const State = struct {
+    camera: Camera,
+    drag: Drag = .{},
+    tip: Tip = .{},
+    search: Search = .{},
+};
+
 pub const TileView = struct {
     z: u8,
     x: u32,
@@ -123,12 +130,8 @@ pub const DockEntry = struct {
 const FLY_Z: f64 = 7.0;
 const SEARCH_RESULT_CAP: usize = 12;
 
-// TODO: use one single state struct with all the states as fields
-fn skipStates(e: *zx.client.Event.Stateful) void {
-    _ = e.state(Camera);
-    _ = e.state(Drag);
-    _ = e.state(Tip);
-    _ = e.state(Search);
+fn skipState(e: *zx.client.Event.Stateful) void {
+    _ = e.state(State);
 }
 
 pub fn pinClass(tip: Tip, i: usize, pin: Pin) []const u8 {
@@ -338,8 +341,7 @@ fn firstPinForUser(user_index: usize) ?usize {
 }
 
 fn focusUser(
-    camera: anytype,
-    tip: anytype,
+    state: *State,
     user_index: usize,
     el_w: f64,
     el_h: f64,
@@ -347,12 +349,12 @@ fn focusUser(
     const pin_i = firstPinForUser(user_index) orelse return;
     const pin = pins[pin_i];
     const p = project(pin.lat, pin.lng, FLY_Z);
-    camera.set(clampCamera(.{
+    state.camera = clampCamera(.{
         .x = p.x - el_w * 0.5,
         .y = p.y - el_h * 0.45,
         .z = FLY_Z,
-    }, el_w, el_h));
-    tip.set(.{ .selected = pin_i, .hovered = pin_i });
+    }, el_w, el_h);
+    state.tip = .{ .selected = pin_i, .hovered = pin_i };
 }
 
 fn containsIgnoreCase(haystack: []const u8, needle: []const u8) bool {
@@ -383,14 +385,12 @@ pub fn collectSearchResults(allocator: zx.Allocator, query: []const u8, out: *st
 pub fn onWheel(e: *zx.client.Event.Stateful) void {
     e.preventDefault();
     if (!zx.platform.isClient()) return;
-    const camera = e.state(Camera);
-    _ = e.state(Drag);
-    _ = e.state(Tip);
-    _ = e.state(Search);
+    const state = e.state(State);
+    var next = state.get();
 
     const we = e.as(zx.client.events.WheelEvent, zx.allocator);
     const size = stageSize();
-    const cam = clampCamera(camera.get(), size.w, size.h);
+    const cam = clampCamera(next.camera, size.w, size.h);
     const focus = pointerFocus(we.client_x, we.client_y, size.w, size.h);
 
     var delta = we.delta_y;
@@ -398,20 +398,19 @@ pub fn onWheel(e: *zx.client.Event.Stateful) void {
     if (we.delta_mode == 2) delta *= size.h;
     delta = std.math.clamp(delta, -100.0, 100.0);
 
-    camera.set(zoomTo(cam, cam.z - delta * ZOOM_WHEEL_SENS, focus.x, focus.y, size.w, size.h));
+    next.camera = zoomTo(cam, cam.z - delta * ZOOM_WHEEL_SENS, focus.x, focus.y, size.w, size.h);
+    state.set(next);
 }
 
 pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
     e.preventDefault();
     if (!zx.platform.isClient()) return;
-    _ = e.state(Camera);
-    const drag = e.state(Drag);
-    _ = e.state(Tip);
-    _ = e.state(Search);
+    const state = e.state(State);
+    var next = state.get();
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
     if (pe.button != 0) return;
     capturePointer(pe.pointer_id);
-    drag.set(.{
+    next.drag = .{
         .active = true,
         .moved = false,
         .last_x = pe.client_x,
@@ -419,26 +418,26 @@ pub fn onPointerDown(e: *zx.client.Event.Stateful) void {
         .start_x = pe.client_x,
         .start_y = pe.client_y,
         .pointer_id = pe.pointer_id,
-    });
+    };
+    state.set(next);
 }
 
 pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
-    const camera = e.state(Camera);
-    const drag = e.state(Drag);
-    const tip = e.state(Tip);
-    _ = e.state(Search);
-    var d = drag.get();
+    const state = e.state(State);
+    var next = state.get();
+    var d = next.drag;
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
     const size = stageSize();
-    var cam = clampCamera(camera.get(), size.w, size.h);
+    var cam = clampCamera(next.camera, size.w, size.h);
 
     if (d.active) {
         if ((pe.buttons & 1) == 0) {
             releasePointer(d.pointer_id);
             d.active = false;
             d.pointer_id = -1;
-            drag.set(d);
+            next.drag = d;
+            state.set(next);
             return;
         }
         const adx = @abs(pe.client_x - d.start_x);
@@ -449,30 +448,26 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
             e.preventDefault();
             cam.x -= @as(f64, @floatFromInt(pe.client_x - d.last_x));
             cam.y -= @as(f64, @floatFromInt(pe.client_y - d.last_y));
-            camera.set(clampCamera(cam, size.w, size.h));
-            var t = tip.get();
-            t.hovered = null;
-            tip.set(t);
+            next.camera = clampCamera(cam, size.w, size.h);
+            next.tip.hovered = null;
         }
         d.last_x = pe.client_x;
         d.last_y = pe.client_y;
-        drag.set(d);
+        next.drag = d;
+        state.set(next);
         return;
     }
 
     const focus = pointerFocus(pe.client_x, pe.client_y, size.w, size.h);
-    var t = tip.get();
-    t.hovered = hitPinIndex(focus.x, focus.y, cam);
-    tip.set(t);
+    next.tip.hovered = hitPinIndex(focus.x, focus.y, cam);
+    state.set(next);
 }
 
 pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
-    const camera = e.state(Camera);
-    const drag = e.state(Drag);
-    const tip = e.state(Tip);
-    _ = e.state(Search);
-    const d = drag.get();
+    const state = e.state(State);
+    var next = state.get();
+    const d = next.drag;
     if (!d.active) return;
 
     const pe = e.as(zx.client.events.PointerEvent, zx.allocator);
@@ -480,133 +475,117 @@ pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
 
     if (!d.moved) {
         const size = stageSize();
-        const cam = clampCamera(camera.get(), size.w, size.h);
+        const cam = clampCamera(next.camera, size.w, size.h);
         const focus = pointerFocus(pe.client_x, pe.client_y, size.w, size.h);
-        var t = tip.get();
-        t.selected = hitPinIndex(focus.x, focus.y, cam);
-        t.hovered = t.selected;
-        tip.set(t);
+        next.tip.selected = hitPinIndex(focus.x, focus.y, cam);
+        next.tip.hovered = next.tip.selected;
     }
-    drag.set(.{});
+    next.drag = .{};
+    state.set(next);
 }
 
 pub fn onPointerLeave(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
-    _ = e.state(Camera);
-    _ = e.state(Drag);
-    const tip = e.state(Tip);
-    _ = e.state(Search);
-    var t = tip.get();
-    t.hovered = null;
-    tip.set(t);
+    const state = e.state(State);
+    var next = state.get();
+    next.tip.hovered = null;
+    state.set(next);
 }
 
 pub fn onControlsPointer(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
-    skipStates(e);
+    skipState(e);
 }
 
 pub fn onDockWheel(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
-    skipStates(e);
+    skipState(e);
 }
 
 pub fn onTipPointer(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
-    skipStates(e);
+    skipState(e);
 }
 
 pub fn onTipClose(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
-    _ = e.state(Camera);
-    _ = e.state(Drag);
-    e.state(Tip).set(.{});
-    _ = e.state(Search);
+    const state = e.state(State);
+    var next = state.get();
+    next.tip = .{};
+    state.set(next);
 }
 
 pub fn onZoomIn(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
-    const camera = e.state(Camera);
-    _ = e.state(Drag);
-    _ = e.state(Tip);
-    _ = e.state(Search);
+    const state = e.state(State);
+    var next = state.get();
     const size = stageSize();
-    const cam = clampCamera(camera.get(), size.w, size.h);
-    camera.set(zoomTo(cam, cam.z + ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h));
+    const cam = clampCamera(next.camera, size.w, size.h);
+    next.camera = zoomTo(cam, cam.z + ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h);
+    state.set(next);
 }
 
 pub fn onZoomOut(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
-    const camera = e.state(Camera);
-    _ = e.state(Drag);
-    _ = e.state(Tip);
-    _ = e.state(Search);
+    const state = e.state(State);
+    var next = state.get();
     const size = stageSize();
-    const cam = clampCamera(camera.get(), size.w, size.h);
-    camera.set(zoomTo(cam, cam.z - ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h));
+    const cam = clampCamera(next.camera, size.w, size.h);
+    next.camera = zoomTo(cam, cam.z - ZOOM_STEP_BUTTON, size.w * 0.5, size.h * 0.5, size.w, size.h);
+    state.set(next);
 }
 
 pub fn onReset(e: *zx.client.Event.Stateful) void {
     if (!zx.platform.isClient()) return;
     const size = stageSize();
-    e.state(Camera).set(initialCamera(size.w, size.h));
-    e.state(Drag).set(.{});
-    e.state(Tip).set(.{});
-    e.state(Search).set(.{});
+    e.state(State).set(.{ .camera = initialCamera(size.w, size.h) });
 }
 
 pub fn onSearchToggle(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
     if (!zx.platform.isClient()) return;
-    _ = e.state(Camera);
-    _ = e.state(Drag);
-    _ = e.state(Tip);
-    const search = e.state(Search);
-    var s = search.get();
-    s.open = !s.open;
-    if (!s.open) s.len = 0;
-    search.set(s);
+    const state = e.state(State);
+    var next = state.get();
+    next.search.open = !next.search.open;
+    if (!next.search.open) next.search.len = 0;
+    state.set(next);
 }
 
 pub fn onSearchInput(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
     if (!zx.platform.isClient()) return;
-    _ = e.state(Camera);
-    _ = e.state(Drag);
-    _ = e.state(Tip);
-    const search = e.state(Search);
+    const state = e.state(State);
     const raw = e.value() orelse "";
-    var s = search.get();
-    const n = @min(raw.len, s.query.len);
-    if (n > 0) @memcpy(s.query[0..n], raw[0..n]);
-    s.len = n;
-    s.open = true;
-    search.set(s);
+    var next = state.get();
+    const n = @min(raw.len, next.search.query.len);
+    if (n > 0) @memcpy(next.search.query[0..n], raw[0..n]);
+    next.search.len = n;
+    next.search.open = true;
+    state.set(next);
 }
 
 pub fn onSearchClear(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
     if (!zx.platform.isClient()) return;
-    _ = e.state(Camera);
-    _ = e.state(Drag);
-    _ = e.state(Tip);
-    e.state(Search).set(.{ .open = true });
+    const state = e.state(State);
+    var next = state.get();
+    next.search = .{ .open = true };
+    state.set(next);
 }
 
 pub fn onSelectUser(e: *zx.client.Event.Stateful) void {
     e.stopPropagation();
     e.preventDefault();
     if (!zx.platform.isClient()) return;
-    const camera = e.state(Camera);
-    _ = e.state(Drag);
-    const tip = e.state(Tip);
-    const search = e.state(Search);
+    const state = e.state(State);
+    var next = state.get();
 
     const raw = e.value() orelse return;
     const user_index = std.fmt.parseInt(usize, raw, 10) catch return;
     const size = stageSize();
-    focusUser(camera, tip, user_index, size.w, size.h);
-    search.set(.{});
+    focusUser(&next, user_index, size.w, size.h);
+    next.search = .{};
+    state.set(next);
 }
 
 pub fn fmtTileSrc(allocator: zx.Allocator, tile: TileView) []const u8 {
