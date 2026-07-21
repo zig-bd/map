@@ -59,87 +59,89 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
             onpointercancel={ctx.bind(map.onPointerUp)}
             onpointerleave={ctx.bind(map.onPointerLeave)}
         >
-            <div class="map-tiles" aria-hidden="true">
-                {for (parent_tiles.items) |tile| (
-                    <img
-                        class="map-tile map-tile-parent"
-                        src={map.fmtTileSrc(ctx.allocator, tile)}
-                        width="256"
-                        height="256"
-                        style={map.fmtTileStyle(ctx.allocator, tile)}
-                        draggable="false"
-                        alt=""
-                    />
-                )}
-                {for (tiles.items) |tile| (
-                    <img
-                        class="map-tile map-tile-main"
-                        src={map.fmtTileSrc(ctx.allocator, tile)}
-                        width="256"
-                        height="256"
-                        style={map.fmtTileStyle(ctx.allocator, tile)}
-                        draggable="false"
-                        alt=""
-                    />
-                )}
-            </div>
+            <div id="map-world" class="map-world">
+                <div class="map-tiles" aria-hidden="true">
+                    {for (parent_tiles.items) |tile| (
+                        <img
+                            class="map-tile map-tile-parent"
+                            src={map.fmtTileSrc(ctx.allocator, tile)}
+                            width="256"
+                            height="256"
+                            style={map.fmtTileStyle(ctx.allocator, tile)}
+                            draggable="false"
+                            alt=""
+                        />
+                    )}
+                    {for (tiles.items) |tile| (
+                        <img
+                            class="map-tile map-tile-main"
+                            src={map.fmtTileSrc(ctx.allocator, tile)}
+                            width="256"
+                            height="256"
+                            style={map.fmtTileStyle(ctx.allocator, tile)}
+                            draggable="false"
+                            alt=""
+                        />
+                    )}
+                </div>
 
-            <div class="map-pins" aria-hidden="true">
-                {for (map.pins, 0..) |pin, i| (
+                <div class="map-pins" aria-hidden="true">
+                    {for (map.pins, 0..) |pin, i| (
+                        <div
+                            class={map.pinClass(tip_v, i, pin)}
+                            style={map.fmtPinStyle(ctx.allocator, pin, cam)}
+                        >
+                            {if (pin.mascot) |m| (
+                                <img
+                                    class="map-pin-mascot"
+                                    src={map.fmtMascotSrc(ctx.allocator, m)}
+                                    alt=""
+                                    draggable="false"
+                                />
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {if (hover_only) |idx| (
+                    <div class="map-hover" style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}>
+                        <span class="map-hover-name">{map.pins[idx].username}</span>
+                        {if (map.pins[idx].city.len > 0) (
+                            <span class="map-hover-city">{map.pins[idx].city}</span>
+                        )}
+                    </div>
+                )}
+
+                {if (tip_v.selected) |idx| (
                     <div
-                        class={map.pinClass(tip_v, i, pin)}
-                        style={map.fmtPinStyle(ctx.allocator, pin, cam)}
+                        class="map-tip"
+                        style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}
+                        onpointerdown={ctx.bind(map.onTipPointer)}
+                        onpointerup={ctx.bind(map.onTipPointer)}
+                        onpointermove={ctx.bind(map.onTipPointer)}
                     >
-                        {if (pin.mascot) |m| (
-                            <img
-                                class="map-pin-mascot"
-                                src={map.fmtMascotSrc(ctx.allocator, m)}
-                                alt=""
-                                draggable="false"
-                            />
+                        <div class="map-tip-top">
+                            <div class="map-tip-who">
+                                <strong class="map-tip-name">{map.pins[idx].username}</strong>
+                                {if (map.pins[idx].city.len > 0) (
+                                    <span class="map-tip-city">{map.pins[idx].city}</span>
+                                )}
+                            </div>
+                            <button type="button" class="map-tip-close" onclick={ctx.bind(map.onTipClose)} aria-label="Close">×</button>
+                        </div>
+                        {if (map.pins[idx].links.len > 0) (
+                            <div class="map-tip-links">
+                                {for (map.pins[idx].links, 0..) |link, i| (
+                                    <span class="map-tip-link">
+                                        {if (i > 0) (<span class="map-tip-link-separator" aria-hidden="true">·</span>) else ""}
+                                        <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
                 )}
             </div>
-
-            {if (hover_only) |idx| (
-                <div class="map-hover" style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}>
-                    <span class="map-hover-name">{map.pins[idx].username}</span>
-                    {if (map.pins[idx].city.len > 0) (
-                        <span class="map-hover-city">{map.pins[idx].city}</span>
-                    )}
-                </div>
-            )}
-
-            {if (tip_v.selected) |idx| (
-                <div
-                    class="map-tip"
-                    style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}
-                    onpointerdown={ctx.bind(map.onTipPointer)}
-                    onpointerup={ctx.bind(map.onTipPointer)}
-                    onpointermove={ctx.bind(map.onTipPointer)}
-                >
-                    <div class="map-tip-top">
-                        <div class="map-tip-who">
-                            <strong class="map-tip-name">{map.pins[idx].username}</strong>
-                            {if (map.pins[idx].city.len > 0) (
-                                <span class="map-tip-city">{map.pins[idx].city}</span>
-                            )}
-                        </div>
-                        <button type="button" class="map-tip-close" onclick={ctx.bind(map.onTipClose)} aria-label="Close">×</button>
-                    </div>
-                    {if (map.pins[idx].links.len > 0) (
-                        <div class="map-tip-links">
-                            {for (map.pins[idx].links, 0..) |link, i| (
-                                <span class="map-tip-link">
-                                    {if (i > 0) (<span class="map-tip-link-separator" aria-hidden="true">·</span>) else ""}
-                                    <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
-                                </span>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
 
             <div class="map-controls" aria-label="Map controls" onpointerdown={ctx.bind(map.onControlsPointer)}>
                 <button type="button" class="map-ctrl" onclick={ctx.bind(map.onZoomIn)} aria-label="Zoom in">+</button>

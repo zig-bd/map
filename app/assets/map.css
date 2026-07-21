@@ -50,12 +50,26 @@ body {
     cursor: grabbing;
 }
 
+.map-stage.is-dragging .map-hover,
+.map-stage.is-dragging .map-tip {
+    visibility: hidden;
+}
+
+.map-world {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
 .map-tiles {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    overflow: hidden;
+    overflow: visible;
     background: #c8d2c0;
 }
 
