@@ -1,0 +1,146 @@
+.{ .mirrors = .{
+    .{
+        .name = "fs.liujiacai.net",
+        .places = .{.{
+            .city = "Toronto",
+            .lat = 43.6532,
+            .lng = -79.3832,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://fs.liujiacai.net/zigbuilds" }},
+    },
+    .{
+        .name = "pkg.earth",
+        .places = .{.{
+            .city = "Roubaix",
+            .lat = 50.6924,
+            .lng = 3.20113,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://pkg.earth/zig" }},
+    },
+    .{
+        .name = "pkg.hexops.org",
+        .places = .{.{
+            .city = "Nuremberg",
+            .lat = 49.4527,
+            .lng = 11.0783,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://pkg.hexops.org/zig" }},
+    },
+    .{
+        .name = "zig-mirror.tsimnet.eu",
+        .places = .{.{
+            .city = "Lauterbourg",
+            .lat = 48.9742,
+            .lng = 8.1851,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig-mirror.tsimnet.eu/zig" }},
+    },
+    .{
+        .name = "zig.bcr.ist",
+        .places = .{.{
+            .city = "Chicago",
+            .lat = 41.8486,
+            .lng = -87.6288,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.bcr.ist" }},
+    },
+    .{
+        .name = "zig.chainsafe.dev",
+        .places = .{.{
+            .city = "Toronto",
+            .lat = 43.6532,
+            .lng = -79.3832,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.chainsafe.dev" }},
+    },
+    .{
+        .name = "zig.karearl.com",
+        .places = .{.{
+            .city = "Toronto",
+            .lat = 43.6532,
+            .lng = -79.3832,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.karearl.com/zig" }},
+    },
+    .{
+        .name = "zig.linus.dev",
+        .places = .{.{
+            .city = "Nuremberg",
+            .lat = 49.4527,
+            .lng = 11.0783,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.linus.dev/zig" }},
+    },
+    .{
+        .name = "zig.mirror.mschae23.de",
+        .places = .{.{
+            .city = "Berlin",
+            .lat = 52.5234,
+            .lng = 13.3224,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.mirror.mschae23.de/zig" }},
+    },
+    .{
+        .name = "zig.savalione.com",
+        .places = .{.{
+            .city = "Moscow",
+            .lat = 55.7487,
+            .lng = 37.6187,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.savalione.com" }},
+    },
+    .{
+        .name = "zig.squirl.dev",
+        .places = .{.{
+            .city = "Singapore",
+            .lat = 1.35208,
+            .lng = 103.82,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.squirl.dev" }},
+    },
+    .{
+        .name = "zig.tilok.dev",
+        .places = .{.{
+            .city = "Vienna",
+            .lat = 48.2049,
+            .lng = 16.3662,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.tilok.dev" }},
+    },
+    .{
+        .name = "zig.vortan.dev",
+        .places = .{.{
+            .city = "Toronto",
+            .lat = 43.6532,
+            .lng = -79.3832,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zig.vortan.dev/zig" }},
+    },
+    .{
+        .name = "ziglang.freetls.fastly.net",
+        .places = .{.{
+            .city = "Frankfurt am Main",
+            .lat = 50.1109,
+            .lng = 8.68213,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://ziglang.freetls.fastly.net" }},
+    },
+    .{
+        .name = "zigmirror.com",
+        .places = .{.{
+            .city = "Toronto",
+            .lat = 43.6532,
+            .lng = -79.3832,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zigmirror.com" }},
+    },
+    .{
+        .name = "zigmirror.hryx.net",
+        .places = .{.{
+            .city = "Oakland",
+            .lat = 37.8381,
+            .lng = -122.2609,
+        }},
+        .links = .{.{ .label = "Mirror", .href = "https://zigmirror.hryx.net/zig" }},
+    },
+} }

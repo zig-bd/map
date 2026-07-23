@@ -51,14 +51,24 @@ pub const Event = struct {
     links: []const Link = &.{},
 };
 
-pub const Location = union(enum) {
+pub const Mirror = struct {
+    name: []const u8,
+    places: []const Place,
+    links: []const Link = &.{},
+};
+
+pub const LocationKind = enum { user, event, mirror };
+
+pub const Location = union(LocationKind) {
     user: User,
     event: Event,
+    mirror: Mirror,
 
     pub fn name(self: Location) []const u8 {
         return switch (self) {
             .user => |u| u.username,
             .event => |e| e.name,
+            .mirror => |m| m.name,
         };
     }
 
@@ -66,6 +76,7 @@ pub const Location = union(enum) {
         return switch (self) {
             .user => |u| u.places,
             .event => |e| e.places,
+            .mirror => |m| m.places,
         };
     }
 
@@ -73,18 +84,19 @@ pub const Location = union(enum) {
         return switch (self) {
             .user => |u| u.links,
             .event => |e| e.links,
+            .mirror => |m| m.links,
         };
     }
 
     pub fn mascot(self: Location) ?Mascot {
         return switch (self) {
             .user => |u| if (u.avatar) |a| a.mascot else null,
-            .event => null,
+            .event, .mirror => null,
         };
     }
 
-    pub fn isEvent(self: Location) bool {
-        return self == .event;
+    pub fn kind(self: Location) LocationKind {
+        return std.meta.activeTag(self);
     }
 };
 
@@ -98,7 +110,7 @@ pub const Pin = struct {
     my: f64,
     links: []const Link,
     mascot: ?Mascot = null,
-    is_event: bool = false,
+    kind: LocationKind = .user,
 };
 
 pub const Camera = struct {
@@ -208,15 +220,16 @@ pub const DockEntry = struct {
     first_city: []const u8,
     extra_places: usize = 0,
     place_label: []const u8 = "",
-    is_event: bool = false,
+    kind: LocationKind = .user,
 };
 
 const users_file: struct { users: []const User } = @import("users.zon");
 const events_file: struct { events: []const Event } = @import("events.zon");
+const mirrors_file: struct { mirrors: []const Mirror } = @import("mirrors.zon");
 
 pub const locations: []const Location = blk: {
     @setEvalBranchQuota(100_000);
-    const n = users_file.users.len + events_file.events.len;
+    const n = users_file.users.len + events_file.events.len + mirrors_file.mirrors.len;
     var arr: [n]Location = undefined;
     var i: usize = 0;
     for (users_file.users) |u| {
@@ -225,6 +238,10 @@ pub const locations: []const Location = blk: {
     }
     for (events_file.events) |e| {
         arr[i] = .{ .event = e };
+        i += 1;
+    }
+    for (mirrors_file.mirrors) |m| {
+        arr[i] = .{ .mirror = m };
         i += 1;
     }
     const frozen = arr;
@@ -250,7 +267,7 @@ pub const pins: []const Pin = blk: {
                 .my = m.y,
                 .links = loc.links(),
                 .mascot = loc.mascot(),
-                .is_event = loc.isEvent(),
+                .kind = loc.kind(),
             };
             i += 1;
         }
@@ -503,7 +520,7 @@ pub fn collectDockEntries(allocator: zx.Allocator, out: *std.ArrayListUnmanaged(
                 .first_city = pin.city,
                 .extra_places = 0,
                 .place_label = pin.city,
-                .is_event = pin.is_event,
+                .kind = pin.kind,
             }) catch {};
         }
     }
@@ -541,14 +558,53 @@ pub fn pinClass(tip: Tip, i: usize, pin: Pin) []const u8 {
         if (tip.hovered == i) return "map-pin has-mascot is-hot";
         return "map-pin has-mascot";
     }
-    if (pin.is_event) {
-        if (tip.selected == i) return "map-pin is-event is-active";
-        if (tip.hovered == i) return "map-pin is-event is-hot";
-        return "map-pin is-event";
-    }
-    if (tip.selected == i) return "map-pin is-active";
-    if (tip.hovered == i) return "map-pin is-hot";
-    return "map-pin";
+    if (tip.selected == i) return switch (pin.kind) {
+        .user => "map-pin is-active",
+        .event => "map-pin is-event is-active",
+        .mirror => "map-pin is-mirror is-active",
+    };
+    if (tip.hovered == i) return switch (pin.kind) {
+        .user => "map-pin is-hot",
+        .event => "map-pin is-event is-hot",
+        .mirror => "map-pin is-mirror is-hot",
+    };
+    return switch (pin.kind) {
+        .user => "map-pin",
+        .event => "map-pin is-event",
+        .mirror => "map-pin is-mirror",
+    };
+}
+
+pub fn kindDotClass(kind: LocationKind) []const u8 {
+    return switch (kind) {
+        .user => "map-kind-dot is-user",
+        .event => "map-kind-dot is-event",
+        .mirror => "map-kind-dot is-mirror",
+    };
+}
+
+pub fn searchHitClass(kind: LocationKind) []const u8 {
+    return switch (kind) {
+        .user => "map-search-hit",
+        .event => "map-search-hit is-event",
+        .mirror => "map-search-hit is-mirror",
+    };
+}
+
+pub fn searchKindClass(kind: LocationKind) []const u8 {
+    return switch (kind) {
+        .user => "map-search-kind",
+        .event => "map-search-kind is-event",
+        .mirror => "map-search-kind is-mirror",
+    };
+}
+
+pub fn kindLabel(kind: LocationKind) []const u8 {
+    return switch (kind) {
+        .user => "user",
+        .event => "event",
+        .mirror => "mirror",
+    };
 }
 
 fn firstPinForLocation(location_index: usize) ?usize {
@@ -1081,7 +1137,7 @@ pub fn onSelectUser(e: *zx.client.Event.Stateful) void {
     e.preventDefault();
     const state = clientState(e) orelse return;
     var next = state.get();
-    const raw = e.value() orelse return;
+    const raw = elementAttr(e, "value") orelse e.value() orelse return;
     const user_index = std.fmt.parseInt(usize, raw, 10) catch return;
     const size = stageSize();
     focusUser(&next, user_index, size.w, size.h);

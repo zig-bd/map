@@ -1,6 +1,7 @@
 const std = @import("std");
 const zig_community = @import("zig_community.zig");
 const zig_day = @import("zig_day.zig");
+const zig_mirrors = @import("zig_mirrors.zig");
 
 pub fn main(init: std.process.Init) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -13,7 +14,7 @@ pub fn main(init: std.process.Init) !void {
 
     const source_name = args.next() orelse {
         std.log.err("usage: zig build source -- <name>", .{});
-        std.log.err("available: zig_community, zig_day", .{});
+        std.log.err("available: zig_community, zig_day, zig_mirrors", .{});
         return error.MissingSourceName;
     };
 
@@ -26,6 +27,12 @@ pub fn main(init: std.process.Init) !void {
     if (std.mem.eql(u8, source_name, "zig_day")) {
         const out_path = args.next() orelse "app/pages/events.zon";
         try zig_day.run(init.io, allocator, out_path);
+        return;
+    }
+
+    if (std.mem.eql(u8, source_name, "zig_mirrors")) {
+        const out_path = args.next() orelse "app/pages/mirrors.zon";
+        try zig_mirrors.run(init.io, allocator, out_path);
         return;
     }
 

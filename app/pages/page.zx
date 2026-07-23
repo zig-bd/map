@@ -51,8 +51,13 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     }
     var user_count: usize = 0;
     var event_count: usize = 0;
+    var mirror_count: usize = 0;
     for (dock.items) |entry| {
-        if (entry.is_event) event_count += 1 else user_count += 1;
+        switch (entry.kind) {
+            .user => user_count += 1,
+            .event => event_count += 1,
+            .mirror => mirror_count += 1,
+        }
     }
     const dock_visible = dock.items[0..@min(dock.items.len, DOCK_DISPLAY_LIMIT)];
     const dock_hidden = dock.items.len - dock_visible.len;
@@ -123,6 +128,10 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
 
                 {if (hover_only) |idx| (
                     <div class="map-hover" style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}>
+                        <span
+                            class={map.kindDotClass(map.pins[idx].kind)}
+                            aria-label={map.kindLabel(map.pins[idx].kind)}
+                        ></span>
                         <span class="map-hover-name">{map.pins[idx].username}</span>
                         {if (map.pins[idx].city.len > 0) (
                             <span class="map-hover-city">{map.pins[idx].city}</span>
@@ -140,7 +149,13 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                     >
                         <div class="map-tip-top">
                             <div class="map-tip-who">
-                                <strong class="map-tip-name">{map.pins[idx].username}</strong>
+                                <div class="map-tip-name-row">
+                                    <span
+                                        class={map.kindDotClass(map.pins[idx].kind)}
+                                        aria-label={map.kindLabel(map.pins[idx].kind)}
+                                    ></span>
+                                    <strong class="map-tip-name">{map.pins[idx].username}</strong>
+                                </div>
                                 {if (map.pins[idx].city.len > 0) (
                                     <span class="map-tip-city">{map.pins[idx].city}</span>
                                 )}
@@ -197,14 +212,14 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                             id="map-search-input"
                             class="map-search-input"
                             type="search"
-                            placeholder="Search people & events…"
+                            placeholder="Search people, events & mirrors…"
                             value={search_v.text()}
                             oninput={ctx.bind(map.onSearchInput)}
                             autocomplete="off"
                             autocapitalize="off"
                             spellcheck="false"
                             autofocus="true"
-                            aria-label="Search people and events"
+                            aria-label="Search people, events, and mirrors"
                         />
                     </div>
                     {if (search_v.len == 0) (
@@ -217,13 +232,13 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                                 <li>
                                     <button
                                         type="button"
-                                        class={if (map.locations[ui].isEvent()) "map-search-hit is-event" else "map-search-hit"}
+                                        class={map.searchHitClass(map.locations[ui].kind())}
                                         value={ui}
                                         onclick={ctx.bind(map.onSelectUser)}
                                     >
                                         <span
-                                            class={if (map.locations[ui].isEvent()) "map-search-kind is-event" else "map-search-kind"}
-                                            aria-label={if (map.locations[ui].isEvent()) "event" else "user"}
+                                            class={map.searchKindClass(map.locations[ui].kind())}
+                                            aria-label={map.kindLabel(map.locations[ui].kind())}
                                         ></span>
                                         <span class="map-search-name">{map.locations[ui].name()}</span>
                                     </button>
@@ -366,17 +381,15 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 onwheel={ctx.bind(map.onDockWheel)}
             >
                 <div class="map-dock-head">
-                    <span class="map-dock-stat">
-                        <span class="map-dock-title">Ziguanas in view</span>
-                        <span class="map-dock-count">{user_count}</span>
-                    </span>
-                    <span class="map-dock-stat is-event">
-                        <span class="map-dock-title">Events in view</span>
-                        <span class="map-dock-count">{event_count}</span>
+                    <span class="map-dock-title">In view</span>
+                    <span class="map-dock-counts">
+                        <span class="map-dock-count" title="Ziguanas">{user_count}</span>
+                        <span class="map-dock-count is-event" title="Events">{event_count}</span>
+                        <span class="map-dock-count is-mirror" title="Mirrors">{mirror_count}</span>
                     </span>
                 </div>
                 {if (dock.items.len == 0) (
-                    <p class="map-dock-empty">Nothing here, zoom out or pan to find ziguanas and events</p>
+                    <p class="map-dock-empty">Nothing here, zoom out or pan to find ziguanas, events, and mirrors</p>
                 ) else (
                     <ul class="map-dock-list">
                         {for (dock_visible) |entry| (
@@ -387,10 +400,13 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                                     value={entry.location_index}
                                     onclick={ctx.bind(map.onSelectUser)}
                                 >
+                                    {if (entry.kind != .user) (
+                                        <span
+                                            class={map.kindDotClass(entry.kind)}
+                                            aria-label={map.kindLabel(entry.kind)}
+                                        ></span>
+                                    ) else ""}
                                     <span class="map-dock-name">{entry.username}</span>
-                                    {if (entry.place_label.len > 0) (
-                                        <span class="map-dock-city">{entry.place_label}</span>
-                                    )}
                                 </button>
                             </li>
                         )}
