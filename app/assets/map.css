@@ -1,5 +1,5 @@
 :root {
-    --map-bg: #070b14;
+    --map-bg: #d5e8eb;
     --map-ink: #e8eef8;
     --map-muted: #8fa0b8;
     --map-accent: #f0b429;
@@ -46,12 +46,38 @@ body {
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
-    background: #c8d2c0;
+    background: var(--map-bg);
     cursor: grab;
+}
+
+.map-stage.is-pending {
+    cursor: default;
 }
 
 .map-stage.is-dragging {
     cursor: grabbing;
+}
+
+/* Soften first paint of pins/dock so they don't pop in. */
+.map-pins.is-ready,
+.map-dock.is-ready {
+    animation: map-soft-in 160ms ease both;
+}
+
+@keyframes map-soft-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .map-pins.is-ready,
+    .map-dock.is-ready {
+        animation: none;
+    }
 }
 
 .map-stage.is-dragging .map-hover,

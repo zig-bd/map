@@ -402,6 +402,15 @@
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/Jan200101" }, .{ .label = "Website", .href = "https://jandroegehoff.de/" } },
     },
     .{
+        .username = "JanBeelte",
+        .places = .{.{ .lat = 49.4360136, .lng = 10.9708601 }},
+        .links = .{
+            .{ .label = "Codeberg", .href = "https://codeberg.org/JanBeelte" },
+            .{ .label = "GitHub", .href = "https://github.com/JanBeelte" },
+            .{ .label = "Website", .href = "https://westack-it.eu" },
+        },
+    },
+    .{
         .username = "jcollie",
         .places = .{.{ .lat = 41.5868654, .lng = -93.6249494 }},
         .links = .{.{ .label = "GitHub", .href = "https://github.com/jcollie" }},
@@ -731,6 +740,11 @@
         .username = "pjz",
         .places = .{.{ .lat = 38.92413807619247, .lng = -77.23687682571092 }},
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/pjz" }, .{ .label = "Website", .href = "https://place.org/~pj/" } },
+    },
+    .{
+        .username = "pop-ecx",
+        .places = .{.{ .lat = -1.286389, .lng = 36.817223 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/pop-ecx" }, .{ .label = "Website", .href = "https://pop-ecx.github.io" } },
     },
     .{
         .username = "postspectacular",

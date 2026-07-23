@@ -5,6 +5,7 @@ pub fn Layout(ctx: zx.LayoutContext, children: zx.Component) zx.Component {
                 <title>Ziguanas</title>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <link rel="preload" href="/locations.json" as="fetch" crossorigin="anonymous" />
             </head>
             <body>
                 {children}

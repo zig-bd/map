@@ -5,18 +5,24 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const types_mod = b.createModule(.{
+        .root_source_file = b.path("app/types.zig"),
+    });
+
     const app_exe = b.addExecutable(.{
         .name = "ziguanas",
         .root_module = b.createModule(.{
             .root_source_file = b.path("app/main.zig"),
             .target = target,
             .optimize = optimize,
-            .imports = &.{},
+            .imports = &.{
+                .{ .name = "types", .module = types_mod },
+            },
         }),
     });
 
     _ = try ziex.init(b, app_exe, .{
-        .cli = .{ .zig_path = "zig" },
+        .cli = .{ .zig_path = "zig", .optimize = optimize },
         .app = .{
             .client = .{
                 .bindings = .{
@@ -42,9 +48,12 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("source/main.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "types", .module = types_mod },
+            },
         }),
     });
-    const source_step = b.step("source", "Fetch external map sources into app/pages/map/users.zon");
+    const source_step = b.step("source", "Fetch external map sources (zig_community, zig_day, zig_mirrors)");
     const source_run = b.addRunArtifact(source_exe);
     source_run.has_side_effects = true;
     source_run.setCwd(b.path("."));

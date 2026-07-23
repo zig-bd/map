@@ -8,8 +8,8 @@ pub fn GET(ctx: zx.RouteContext) !void {
     ctx.response.setContentType(.@"application/json");
 }
 
-const users = @import("../../pages/users.zon");
-const events = @import("../../pages/events.zon");
-const mirrors = @import("../../pages/mirrors.zon");
+const users = @import("../../data/users.zon");
+const events = @import("../../data/events.zon");
+const mirrors = @import("../../data/mirrors.zon");
 
 const zx = @import("zx");

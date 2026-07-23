@@ -4,13 +4,13 @@
     .fingerprint = 0x1666077679e2ffe7,
     .minimum_zig_version = "0.17.0-dev.1422+e863bf3be",
     .dependencies = .{
-        .ziex = .{
-            .url = "git+https://github.com/ziex-dev/ziex#78f6e52ea451e041bf5fd777370a06da425dd05f",
-            .hash = "ziex-0.1.0-dev-Z3YcvcAilwElFZ9A7xSiAmPqCOlN4peaVf5N2vZBHLql",
-        },
         .zig_branding = .{
             .url = "git+https://codeberg.org/ziglang/logo.git#2f6e01e9dc0410d6815c3e58be6d437bf26f0b4e",
             .hash = "N-V-__8AAKsnBQC52IY79HuB1adcveDcx3eh0rcAHrYTLF-y",
+        },
+        .ziex = .{
+            .url = "git+https://github.com/ziex-dev/ziex#e7385bef8627d9ac589c54b04de05d4a23430b92",
+            .hash = "ziex-0.1.0-dev-Z3YcvVsllwFaV0B4AyTxbkQTs9N9yXKs8_dkx4s9K7kI",
         },
     },
     .paths = .{

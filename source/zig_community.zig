@@ -1,4 +1,5 @@
 const std = @import("std");
+const types = @import("types");
 
 const tarball_url = "https://codeload.github.com/zig-community/user-map/tar.gz/refs/heads/master";
 
@@ -8,23 +9,9 @@ const PersonJson = struct {
     links: ?std.json.Value = null,
 };
 
-const Link = struct {
-    label: []const u8,
-    href: []const u8,
-};
-
-const Place = struct {
-    city: []const u8 = "",
-    lat: f64,
-    lng: f64,
-};
-
-const User = struct {
-    username: []const u8,
-    avatar: ?struct { mascot: enum { zero, carmen, ziggy } } = null,
-    places: []const Place,
-    links: []const Link = &.{},
-};
+const Link = types.Link;
+const Place = types.Place;
+const User = types.User;
 
 const UsersFile = struct {
     users: []const User,

@@ -17,6 +17,8 @@ pub fn Page(ctx: zx.PageContext) !zx.Component {
 }
 
 pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
+    const is_client = zx.platform.isClient();
+
     const size = map.stageSize();
     const state = ctx.state(map.State, .{ .camera = map.initialCamera(size.w, size.h) });
     const state_v = state.get();
@@ -24,30 +26,38 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     const tip_v = state_v.tip;
     const search_v = state_v.search;
     const join_v = state_v.join;
-    const cities = map.initPlaces(
-        ctx.state(map.Places, .{ .places = &.{} }),
-        join_v.open,
-    );
+
+    const cities = if (is_client)
+        map.initPlaces(ctx.state(map.Places, .{ .places = &.{} }), join_v.open)
+    else
+        @as([]const map.City, &.{});
+
+    const loc_data = if (is_client)
+        map.initLocations(ctx.state(map.LocationsData, .{}), true)
+    else
+        map.LocationsData{};
+    const pins = loc_data.pins;
+    const ready = loc_data.ready;
     const hover_only: ?usize = if (tip_v.selected != null) null else tip_v.hovered;
 
     var parent_tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
     var tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
-    const z_int: u8 = map.displayTileZoom(cam.z);
-    if (z_int > 0) {
-        map.collectTilesAt(ctx.allocator, &parent_tiles, cam, size.w, size.h, z_int - 1);
+    if (is_client) {
+        const z_int: u8 = map.displayTileZoom(cam.z);
+        if (z_int > 0) {
+            map.collectTilesAt(ctx.allocator, &parent_tiles, cam, size.w, size.h, z_int - 1);
+        }
+        map.collectTilesAt(ctx.allocator, &tiles, cam, size.w, size.h, z_int);
     }
-    map.collectTilesAt(ctx.allocator, &tiles, cam, size.w, size.h, z_int);
 
     var visible_pin_indices: std.ArrayListUnmanaged(usize) = .empty;
-    map.collectVisiblePinIndices(ctx.allocator, &visible_pin_indices, cam, size.w, size.h);
+    if (is_client and ready) {
+        map.collectVisiblePinIndices(ctx.allocator, &visible_pin_indices, cam, size.w, size.h);
+    }
 
     var dock: std.ArrayListUnmanaged(map.DockEntry) = .empty;
-    {
-        var visible: std.ArrayListUnmanaged(map.Pin) = .empty;
-        for (visible_pin_indices.items) |i| {
-            visible.append(ctx.allocator, map.pins[i]) catch {};
-        }
-        map.collectDockEntries(ctx.allocator, &dock, visible.items);
+    if (is_client and ready) {
+        map.collectDockEntries(ctx.allocator, &dock, pins, visible_pin_indices.items);
     }
     var user_count: usize = 0;
     var event_count: usize = 0;
@@ -63,14 +73,21 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     const dock_hidden = dock.items.len - dock_visible.len;
 
     var search_hits: std.ArrayListUnmanaged(usize) = .empty;
-    if (search_v.open) {
+    if (is_client and search_v.open and ready) {
         map.collectSearchResults(ctx.allocator, search_v.text(), &search_hits);
     }
+
+    const stage_class: []const u8 = if (state_v.drag.active)
+        "map-stage is-dragging"
+    else if (!is_client)
+        "map-stage is-pending"
+    else
+        "map-stage";
 
     return (
         <div
             id="map-stage"
-            class={if (state_v.drag.active) "map-stage is-dragging" else "map-stage"}
+            class={stage_class}
             @allocator={ctx.allocator}
             onwheel={ctx.bind(map.onWheel)}
             onpointerdown={ctx.bind(map.onPointerDown)}
@@ -79,104 +96,110 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
             onpointercancel={ctx.bind(map.onPointerUp)}
             onpointerleave={ctx.bind(map.onPointerLeave)}
         >
-            <div id="map-world" class="map-world">
-                <div class="map-tiles" aria-hidden="true">
-                    {for (parent_tiles.items) |tile| (
-                        <img
-                            key={map.fmtTileKey(ctx.allocator, tile)}
-                            class="map-tile map-tile-parent"
-                            src={map.fmtTileSrc(ctx.allocator, tile)}
-                            width="256"
-                            height="256"
-                            style={map.fmtTileStyle(ctx.allocator, tile)}
-                            draggable="false"
-                            alt=""
-                        />
-                    )}
-                    {for (tiles.items) |tile| (
-                        <img
-                            key={map.fmtTileKey(ctx.allocator, tile)}
-                            class="map-tile map-tile-main"
-                            src={map.fmtTileSrc(ctx.allocator, tile)}
-                            width="256"
-                            height="256"
-                            style={map.fmtTileStyle(ctx.allocator, tile)}
-                            draggable="false"
-                            alt=""
-                        />
-                    )}
-                </div>
+            {if (is_client) (
+                <div id="map-world" class="map-world">
+                    <div class="map-tiles" aria-hidden="true">
+                        {for (parent_tiles.items) |tile| (
+                            <img
+                                key={map.fmtTileKey(ctx.allocator, tile)}
+                                class="map-tile map-tile-parent"
+                                src={map.fmtTileSrc(ctx.allocator, tile)}
+                                width="256"
+                                height="256"
+                                style={map.fmtTileStyle(ctx.allocator, tile)}
+                                draggable="false"
+                                alt=""
+                            />
+                        )}
+                        {for (tiles.items) |tile| (
+                            <img
+                                key={map.fmtTileKey(ctx.allocator, tile)}
+                                class="map-tile map-tile-main"
+                                src={map.fmtTileSrc(ctx.allocator, tile)}
+                                width="256"
+                                height="256"
+                                style={map.fmtTileStyle(ctx.allocator, tile)}
+                                draggable="false"
+                                alt=""
+                            />
+                        )}
+                    </div>
 
-                <div class="map-pins" aria-hidden="true">
-                    {for (visible_pin_indices.items) |i| (
+                    <div class={if (ready) "map-pins is-ready" else "map-pins"} aria-hidden="true">
+                        {for (visible_pin_indices.items) |i| (
+                            <div
+                                key={i}
+                                class={map.pinClass(tip_v, i, pins[i])}
+                                style={map.fmtPinStyle(ctx.allocator, pins[i], cam)}
+                            >
+                                {if (pins[i].mascot) |m| (
+                                    <img
+                                        class="map-pin-mascot"
+                                        src=`/assets/branding/{@tagName(m)}.svg`
+                                        alt=""
+                                        draggable="false"
+                                    />
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {if (hover_only) |idx| (
+                        <div class="map-hover" style={map.fmtTipStyle(ctx.allocator, pins[idx], cam)}>
+                            <span
+                                class={map.kindDotClass(pins[idx].kind)}
+                                aria-label={map.kindLabel(pins[idx].kind)}
+                            ></span>
+                            <span class="map-hover-name">{pins[idx].username}</span>
+                            {if (pins[idx].city.len > 0) (
+                                <span class="map-hover-city">{pins[idx].city}</span>
+                            )}
+                        </div>
+                    )}
+
+                    {if (tip_v.selected) |idx| (
                         <div
-                            key={i}
-                            class={map.pinClass(tip_v, i, map.pins[i])}
-                            style={map.fmtPinStyle(ctx.allocator, map.pins[i], cam)}
+                            class="map-tip"
+                            style={map.fmtTipStyle(ctx.allocator, pins[idx], cam)}
+                            onpointerdown={ctx.bind(map.onTipPointer)}
+                            onpointerup={ctx.bind(map.onTipPointer)}
+                            onpointermove={ctx.bind(map.onTipPointer)}
                         >
-                            {if (map.pins[i].mascot) |m| (
-                                <img
-                                    class="map-pin-mascot"
-                                    src=`/assets/branding/{@tagName(m)}.svg`
-                                    alt=""
-                                    draggable="false"
-                                />
+                            <div class="map-tip-top">
+                                <div class="map-tip-who">
+                                    <div class="map-tip-name-row">
+                                        <span
+                                            class={map.kindDotClass(pins[idx].kind)}
+                                            aria-label={map.kindLabel(pins[idx].kind)}
+                                        ></span>
+                                        <strong class="map-tip-name">{pins[idx].username}</strong>
+                                    </div>
+                                    {if (pins[idx].city.len > 0) (
+                                        <span class="map-tip-city">{pins[idx].city}</span>
+                                    )}
+                                </div>
+                                <button type="button" class="map-tip-close" onclick={ctx.bind(map.onTipClose)} aria-label="Close">×</button>
+                            </div>
+                            {if (pins[idx].links.len > 0) (
+                                <div class="map-tip-links">
+                                    {for (pins[idx].links, 0..) |link, i| (
+                                        <span class="map-tip-link">
+                                            {if (i > 0) (<span class="map-tip-link-separator" aria-hidden="true">·</span>) else ""}
+                                            <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
+                                        </span>
+                                    )}
+                                </div>
                             )}
                         </div>
                     )}
                 </div>
+            )}
 
-                {if (hover_only) |idx| (
-                    <div class="map-hover" style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}>
-                        <span
-                            class={map.kindDotClass(map.pins[idx].kind)}
-                            aria-label={map.kindLabel(map.pins[idx].kind)}
-                        ></span>
-                        <span class="map-hover-name">{map.pins[idx].username}</span>
-                        {if (map.pins[idx].city.len > 0) (
-                            <span class="map-hover-city">{map.pins[idx].city}</span>
-                        )}
-                    </div>
-                )}
-
-                {if (tip_v.selected) |idx| (
-                    <div
-                        class="map-tip"
-                        style={map.fmtTipStyle(ctx.allocator, map.pins[idx], cam)}
-                        onpointerdown={ctx.bind(map.onTipPointer)}
-                        onpointerup={ctx.bind(map.onTipPointer)}
-                        onpointermove={ctx.bind(map.onTipPointer)}
-                    >
-                        <div class="map-tip-top">
-                            <div class="map-tip-who">
-                                <div class="map-tip-name-row">
-                                    <span
-                                        class={map.kindDotClass(map.pins[idx].kind)}
-                                        aria-label={map.kindLabel(map.pins[idx].kind)}
-                                    ></span>
-                                    <strong class="map-tip-name">{map.pins[idx].username}</strong>
-                                </div>
-                                {if (map.pins[idx].city.len > 0) (
-                                    <span class="map-tip-city">{map.pins[idx].city}</span>
-                                )}
-                            </div>
-                            <button type="button" class="map-tip-close" onclick={ctx.bind(map.onTipClose)} aria-label="Close">×</button>
-                        </div>
-                        {if (map.pins[idx].links.len > 0) (
-                            <div class="map-tip-links">
-                                {for (map.pins[idx].links, 0..) |link, i| (
-                                    <span class="map-tip-link">
-                                        {if (i > 0) (<span class="map-tip-link-separator" aria-hidden="true">·</span>) else ""}
-                                        <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            <div class="map-controls" aria-label="Map controls" onpointerdown={ctx.bind(map.onControlsPointer)}>
+            <div
+                class="map-controls"
+                aria-label="Map controls"
+                onpointerdown={ctx.bind(map.onControlsPointer)}
+            >
                 <button type="button" class="map-ctrl" onclick={ctx.bind(map.onZoomIn)} aria-label="Zoom in">+</button>
                 <button type="button" class="map-ctrl" onclick={ctx.bind(map.onZoomOut)} aria-label="Zoom out">−</button>
                 <button type="button" class="map-ctrl" onclick={ctx.bind(map.onReset)} aria-label="Reset view">⌂</button>
@@ -201,7 +224,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 </button>
             </div>
 
-            {if (search_v.open) (
+            {if (is_client and search_v.open) (
                 <div
                     class="map-search"
                     onpointerdown={ctx.bind(map.onControlsPointer)}
@@ -232,15 +255,15 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                                 <li>
                                     <button
                                         type="button"
-                                        class={map.searchHitClass(map.locations[ui].kind())}
+                                        class={map.searchHitClass(map.locationAt(ui).kind())}
                                         value={ui}
                                         onclick={ctx.bind(map.onSelectUser)}
                                     >
                                         <span
-                                            class={map.searchKindClass(map.locations[ui].kind())}
-                                            aria-label={map.kindLabel(map.locations[ui].kind())}
+                                            class={map.searchKindClass(map.locationAt(ui).kind())}
+                                            aria-label={map.kindLabel(map.locationAt(ui).kind())}
                                         ></span>
-                                        <span class="map-search-name">{map.locations[ui].name()}</span>
+                                        <span class="map-search-name">{map.locationAt(ui).name()}</span>
                                     </button>
                                 </li>
                             )}
@@ -249,7 +272,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 </div>
             )}
 
-            {if (join_v.open) (
+            {if (is_client and join_v.open) (
                 <form
                     class="map-join"
                     action={ctx.bind(map.onJoinSubmit)}
@@ -374,48 +397,50 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 </form>
             )}
 
-            <aside
-                class="map-dock"
-                aria-live="polite"
-                onpointerdown={ctx.bind(map.onControlsPointer)}
-                onwheel={ctx.bind(map.onDockWheel)}
-            >
-                <div class="map-dock-head">
-                    <span class="map-dock-title">In view</span>
-                    <span class="map-dock-counts">
-                        <span class="map-dock-count" title="Ziguanas">{user_count}</span>
-                        <span class="map-dock-count is-event" title="Events">{event_count}</span>
-                        <span class="map-dock-count is-mirror" title="Mirrors">{mirror_count}</span>
-                    </span>
-                </div>
-                {if (dock.items.len == 0) (
-                    <p class="map-dock-empty">Nothing here, zoom out or pan to find ziguanas, events, and mirrors</p>
-                ) else (
-                    <ul class="map-dock-list">
-                        {for (dock_visible) |entry| (
-                            <li>
-                                <button
-                                    type="button"
-                                    class="map-dock-item"
-                                    value={entry.location_index}
-                                    onclick={ctx.bind(map.onSelectUser)}
-                                >
-                                    {if (entry.kind != .user) (
-                                        <span
-                                            class={map.kindDotClass(entry.kind)}
-                                            aria-label={map.kindLabel(entry.kind)}
-                                        ></span>
-                                    ) else ""}
-                                    <span class="map-dock-name">{entry.username}</span>
-                                </button>
-                            </li>
-                        )}
-                        {if (dock_hidden > 0) (
-                            <li class="map-dock-more">+ {dock_hidden}</li>
-                        )}
-                    </ul>
-                )}
-            </aside>
+            {if (is_client and ready) (
+                <aside
+                    class="map-dock is-ready"
+                    aria-live="polite"
+                    onpointerdown={ctx.bind(map.onControlsPointer)}
+                    onwheel={ctx.bind(map.onDockWheel)}
+                >
+                    <div class="map-dock-head">
+                        <span class="map-dock-title">In view</span>
+                        <span class="map-dock-counts">
+                            <span class="map-dock-count" title="Ziguanas">{user_count}</span>
+                            <span class="map-dock-count is-event" title="Events">{event_count}</span>
+                            <span class="map-dock-count is-mirror" title="Mirrors">{mirror_count}</span>
+                        </span>
+                    </div>
+                    {if (dock.items.len == 0) (
+                        <p class="map-dock-empty">Nothing here, zoom out or pan to find ziguanas, events, and mirrors</p>
+                    ) else (
+                        <ul class="map-dock-list">
+                            {for (dock_visible) |entry| (
+                                <li>
+                                    <button
+                                        type="button"
+                                        class="map-dock-item"
+                                        value={entry.location_index}
+                                        onclick={ctx.bind(map.onSelectUser)}
+                                    >
+                                        {if (entry.kind != .user) (
+                                            <span
+                                                class={map.kindDotClass(entry.kind)}
+                                                aria-label={map.kindLabel(entry.kind)}
+                                            ></span>
+                                        ) else ""}
+                                        <span class="map-dock-name">{entry.username}</span>
+                                    </button>
+                                </li>
+                            )}
+                            {if (dock_hidden > 0) (
+                                <li class="map-dock-more">+ {dock_hidden}</li>
+                            )}
+                        </ul>
+                    )}
+                </aside>
+            )}
 
             <p class="map-attrib">
                 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>

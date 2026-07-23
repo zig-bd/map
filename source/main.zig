@@ -19,19 +19,19 @@ pub fn main(init: std.process.Init) !void {
     };
 
     if (std.mem.eql(u8, source_name, "zig_community")) {
-        const out_path = args.next() orelse "app/pages/users.zon";
+        const out_path = args.next() orelse "app/data/users.zon";
         try zig_community.run(init.io, allocator, out_path);
         return;
     }
 
     if (std.mem.eql(u8, source_name, "zig_day")) {
-        const out_path = args.next() orelse "app/pages/events.zon";
+        const out_path = args.next() orelse "app/data/events.zon";
         try zig_day.run(init.io, allocator, out_path);
         return;
     }
 
     if (std.mem.eql(u8, source_name, "zig_mirrors")) {
-        const out_path = args.next() orelse "app/pages/mirrors.zon";
+        const out_path = args.next() orelse "app/data/mirrors.zon";
         try zig_mirrors.run(init.io, allocator, out_path);
         return;
     }

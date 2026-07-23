@@ -1,24 +1,12 @@
 const std = @import("std");
+const types = @import("types");
 
 const mirrors_url = "https://ziglang.org/download/community-mirrors.txt";
 const geo_url_fmt = "http://ip-api.com/json/{s}?fields=status,message,lat,lon,city,country";
 
-const Link = struct {
-    label: []const u8,
-    href: []const u8,
-};
-
-const Place = struct {
-    city: []const u8 = "",
-    lat: f64,
-    lng: f64,
-};
-
-const Mirror = struct {
-    name: []const u8,
-    places: []const Place,
-    links: []const Link = &.{},
-};
+const Link = types.Link;
+const Place = types.Place;
+const Mirror = types.Mirror;
 
 const MirrorsFile = struct {
     mirrors: []const Mirror,
@@ -79,9 +67,9 @@ pub fn run(io: std.Io, allocator: std.mem.Allocator, out_path: []const u8) !void
 
         const places = try allocator.alloc(Place, 1);
         places[0] = .{
-            .city = try allocator.dupe(u8, parsed.value.city orelse ""),
             .lat = lat,
             .lng = lng,
+            .city = try allocator.dupe(u8, parsed.value.city orelse ""),
         };
 
         const links = try allocator.alloc(Link, 1);

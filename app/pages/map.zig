@@ -1,5 +1,6 @@
 const std = @import("std");
 const zx = @import("zx");
+const types = @import("types");
 
 const js = zx.client.js;
 
@@ -21,84 +22,15 @@ const TILE_PAD_PX: f64 = 512.0;
 /// iOS Safari can expose negative pointerIds.
 const NO_POINTER: i32 = -1;
 
-pub const Link = struct {
-    label: []const u8,
-    href: []const u8,
-};
-
-pub const Place = struct {
-    city: []const u8 = "",
-    lat: f64,
-    lng: f64,
-};
-
-pub const Mascot = enum { zero, carmen, ziggy };
-
-pub const Avatar = struct {
-    mascot: Mascot,
-};
-
-pub const User = struct {
-    username: []const u8,
-    avatar: ?Avatar = null,
-    places: []const Place,
-    links: []const Link = &.{},
-};
-
-pub const Event = struct {
-    name: []const u8,
-    places: []const Place,
-    links: []const Link = &.{},
-};
-
-pub const Mirror = struct {
-    name: []const u8,
-    places: []const Place,
-    links: []const Link = &.{},
-};
-
-pub const LocationKind = enum { user, event, mirror };
-
-pub const Location = union(LocationKind) {
-    user: User,
-    event: Event,
-    mirror: Mirror,
-
-    pub fn name(self: Location) []const u8 {
-        return switch (self) {
-            .user => |u| u.username,
-            .event => |e| e.name,
-            .mirror => |m| m.name,
-        };
-    }
-
-    pub fn places(self: Location) []const Place {
-        return switch (self) {
-            .user => |u| u.places,
-            .event => |e| e.places,
-            .mirror => |m| m.places,
-        };
-    }
-
-    pub fn links(self: Location) []const Link {
-        return switch (self) {
-            .user => |u| u.links,
-            .event => |e| e.links,
-            .mirror => |m| m.links,
-        };
-    }
-
-    pub fn mascot(self: Location) ?Mascot {
-        return switch (self) {
-            .user => |u| if (u.avatar) |a| a.mascot else null,
-            .event, .mirror => null,
-        };
-    }
-
-    pub fn kind(self: Location) LocationKind {
-        return std.meta.activeTag(self);
-    }
-};
+pub const Link = types.Link;
+pub const Place = types.Place;
+pub const Mascot = types.Mascot;
+pub const Avatar = types.Avatar;
+pub const User = types.User;
+pub const Event = types.Event;
+pub const Mirror = types.Mirror;
+pub const LocationKind = types.LocationKind;
+pub const Location = types.Location;
 
 pub const Pin = struct {
     location_index: usize,
@@ -217,68 +149,40 @@ pub const TileView = struct {
 pub const DockEntry = struct {
     location_index: usize,
     username: []const u8,
-    first_city: []const u8,
-    extra_places: usize = 0,
-    place_label: []const u8 = "",
     kind: LocationKind = .user,
 };
 
-const users_file: struct { users: []const User } = @import("users.zon");
-const events_file: struct { events: []const Event } = @import("events.zon");
-const mirrors_file: struct { mirrors: []const Mirror } = @import("mirrors.zon");
-
-pub const locations: []const Location = blk: {
-    @setEvalBranchQuota(100_000);
-    const n = users_file.users.len + events_file.events.len + mirrors_file.mirrors.len;
-    var arr: [n]Location = undefined;
-    var i: usize = 0;
-    for (users_file.users) |u| {
-        arr[i] = .{ .user = u };
-        i += 1;
-    }
-    for (events_file.events) |e| {
-        arr[i] = .{ .event = e };
-        i += 1;
-    }
-    for (mirrors_file.mirrors) |m| {
-        arr[i] = .{ .mirror = m };
-        i += 1;
-    }
-    const frozen = arr;
-    break :blk &frozen;
-};
-
-pub const pins: []const Pin = blk: {
-    @setEvalBranchQuota(100_000);
-    var n: usize = 0;
-    for (locations) |loc| n += loc.places().len;
-    var arr: [n]Pin = undefined;
-    var i: usize = 0;
-    for (locations, 0..) |loc, li| {
-        for (loc.places()) |place| {
-            const m = mercatorNorm(place.lat, place.lng);
-            arr[i] = .{
-                .location_index = li,
-                .username = loc.name(),
-                .city = place.city,
-                .lat = place.lat,
-                .lng = place.lng,
-                .mx = m.x,
-                .my = m.y,
-                .links = loc.links(),
-                .mascot = loc.mascot(),
-                .kind = loc.kind(),
-            };
-            i += 1;
-        }
-    }
-    const frozen = arr;
-    break :blk &frozen;
+pub const LocationsData = struct {
+    users: []const User = &.{},
+    events: []const Event = &.{},
+    mirrors: []const Mirror = &.{},
+    pins: []const Pin = &.{},
+    ready: bool = false,
 };
 
 /// Component-owned state exposed to the async fetch callback.
 pub var places: *zx.State(Places) = undefined;
 var places_fetch_started = false;
+
+pub var locations: *zx.State(LocationsData) = undefined;
+var locations_fetch_started = false;
+
+pub fn getPins() []const Pin {
+    return locations.get().pins;
+}
+
+pub fn locationCount() usize {
+    const d = locations.get();
+    return d.users.len + d.events.len + d.mirrors.len;
+}
+
+pub fn locationAt(index: usize) Location {
+    const d = locations.get();
+    if (index < d.users.len) return .{ .user = d.users[index] };
+    const after_users = index - d.users.len;
+    if (after_users < d.events.len) return .{ .event = d.events[after_users] };
+    return .{ .mirror = d.mirrors[after_users - d.events.len] };
+}
 
 pub fn initPlaces(state: *zx.State(Places), load: bool) []const City {
     if (zx.platform.isClient()) {
@@ -288,11 +192,27 @@ pub fn initPlaces(state: *zx.State(Places), load: bool) []const City {
     return state.get().places;
 }
 
+pub fn initLocations(state: *zx.State(LocationsData), load: bool) LocationsData {
+    if (zx.platform.isClient()) {
+        locations = state;
+        if (load) fetchLocations();
+    }
+    return state.get();
+}
+
 fn fetchPlaces() void {
     if (!zx.platform.isClient() or places_fetch_started or places.get().places.len > 0) return;
     places_fetch_started = true;
     _ = zx.fetch(.wasm(&onPlacesFetch), zx.allocator, "/places.json", .{}) catch {
         places_fetch_started = false;
+    };
+}
+
+fn fetchLocations() void {
+    if (!zx.platform.isClient() or locations_fetch_started or locations.get().ready) return;
+    locations_fetch_started = true;
+    _ = zx.fetch(.wasm(&onLocationsFetch), zx.allocator, "/locations.json", .{}) catch {
+        locations_fetch_started = false;
     };
 }
 
@@ -320,6 +240,93 @@ fn onPlacesFetch(response: ?*zx.Fetch.Response, err: ?zx.Fetch.FetchError) void 
     };
     places_fetch_started = false;
     places.set(loaded);
+}
+
+fn onLocationsFetch(response: ?*zx.Fetch.Response, err: ?zx.Fetch.FetchError) void {
+    if (err != null) {
+        locations_fetch_started = false;
+        return;
+    }
+    const res = response orelse {
+        locations_fetch_started = false;
+        return;
+    };
+    defer res.deinit();
+    if (!res.ok()) {
+        locations_fetch_started = false;
+        return;
+    }
+    const text = res.text() catch {
+        locations_fetch_started = false;
+        return;
+    };
+    var data = zx.util.zxon.parse(LocationsData, zx.allocator, text, .{}) catch {
+        locations_fetch_started = false;
+        return;
+    };
+    data.pins = allocPins(data) catch {
+        locations_fetch_started = false;
+        return;
+    };
+    data.ready = true;
+    locations_fetch_started = false;
+    locations.set(data);
+}
+
+fn allocPins(data: LocationsData) ![]const Pin {
+    var pin_n: usize = 0;
+    for (data.users) |u| pin_n += u.places.len;
+    for (data.events) |e| pin_n += e.places.len;
+    for (data.mirrors) |m| pin_n += m.places.len;
+
+    const pin_arr = try zx.allocator.alloc(Pin, pin_n);
+    var pi: usize = 0;
+    var li: usize = 0;
+    for (data.users) |u| {
+        for (u.places) |place| {
+            pin_arr[pi] = makePin(li, u.username, place, u.links, if (u.avatar) |a| a.mascot else null, .user);
+            pi += 1;
+        }
+        li += 1;
+    }
+    for (data.events) |e| {
+        for (e.places) |place| {
+            pin_arr[pi] = makePin(li, e.name, place, e.links, null, .event);
+            pi += 1;
+        }
+        li += 1;
+    }
+    for (data.mirrors) |m| {
+        for (m.places) |place| {
+            pin_arr[pi] = makePin(li, m.name, place, m.links, null, .mirror);
+            pi += 1;
+        }
+        li += 1;
+    }
+    return pin_arr;
+}
+
+fn makePin(
+    location_index: usize,
+    name: []const u8,
+    place: Place,
+    links: []const Link,
+    mascot: ?Mascot,
+    kind: LocationKind,
+) Pin {
+    const m = mercatorNorm(place.lat, place.lng);
+    return .{
+        .location_index = location_index,
+        .username = name,
+        .city = place.city,
+        .lat = place.lat,
+        .lng = place.lng,
+        .mx = m.x,
+        .my = m.y,
+        .links = links,
+        .mascot = mascot,
+        .kind = kind,
+    };
 }
 
 fn cities() []const City {
@@ -432,7 +439,7 @@ pub fn pinInView(pin: Pin, cam: Camera, el_w: f64, el_h: f64) bool {
 fn hitPinIndex(sx: f64, sy: f64, cam: Camera) ?usize {
     var best_i: ?usize = null;
     var best_d: f64 = HIT_PX * HIT_PX;
-    for (pins, 0..) |pin, i| {
+    for (getPins(), 0..) |pin, i| {
         const p = screenPos(pin, cam);
         const dx = p.x - sx;
         const dy = p.y - sy;
@@ -487,42 +494,31 @@ pub fn collectVisiblePinIndices(
     el_w: f64,
     el_h: f64,
 ) void {
-    for (pins, 0..) |pin, i| {
+    for (getPins(), 0..) |pin, i| {
         if (!pinInView(pin, cam, el_w, el_h)) continue;
         out.append(allocator, i) catch {};
     }
 }
 
-fn fmtDockPlace(allocator: zx.Allocator, first_city: []const u8, extra: usize) ![]const u8 {
-    if (extra == 0) return first_city;
-    if (first_city.len == 0) return try std.fmt.allocPrint(allocator, "+{d}", .{extra});
-    return try std.fmt.allocPrint(allocator, "{s} + {d}", .{ first_city, extra });
-}
+pub fn collectDockEntries(
+    allocator: zx.Allocator,
+    out: *std.ArrayListUnmanaged(DockEntry),
+    pins: []const Pin,
+    visible_indices: []const usize,
+) void {
+    const seen = allocator.alloc(bool, locationCount()) catch return;
+    defer allocator.free(seen);
+    @memset(seen, false);
 
-pub fn collectDockEntries(allocator: zx.Allocator, out: *std.ArrayListUnmanaged(DockEntry), visible: []const Pin) void {
-    const index_of = allocator.alloc(?usize, locations.len) catch return;
-    defer allocator.free(index_of);
-    @memset(index_of, null);
-
-    for (visible) |pin| {
-        if (index_of[pin.location_index]) |ei| {
-            out.items[ei].extra_places += 1;
-            out.items[ei].place_label = fmtDockPlace(
-                allocator,
-                out.items[ei].first_city,
-                out.items[ei].extra_places,
-            ) catch out.items[ei].first_city;
-        } else {
-            index_of[pin.location_index] = out.items.len;
-            out.append(allocator, .{
-                .location_index = pin.location_index,
-                .username = pin.username,
-                .first_city = pin.city,
-                .extra_places = 0,
-                .place_label = pin.city,
-                .kind = pin.kind,
-            }) catch {};
-        }
+    for (visible_indices) |pin_i| {
+        const pin = pins[pin_i];
+        if (seen[pin.location_index]) continue;
+        seen[pin.location_index] = true;
+        out.append(allocator, .{
+            .location_index = pin.location_index,
+            .username = pin.username,
+            .kind = pin.kind,
+        }) catch {};
     }
 }
 
@@ -544,8 +540,9 @@ fn containsIgnoreCase(haystack: []const u8, needle: []const u8) bool {
 
 pub fn collectSearchResults(allocator: zx.Allocator, query: []const u8, out: *std.ArrayListUnmanaged(usize)) void {
     if (query.len == 0) return;
-    for (locations, 0..) |loc, li| {
-        if (!containsIgnoreCase(loc.name(), query)) continue;
+    var li: usize = 0;
+    while (li < locationCount()) : (li += 1) {
+        if (!containsIgnoreCase(locationAt(li).name(), query)) continue;
         out.append(allocator, li) catch {};
         if (out.items.len >= SEARCH_RESULT_CAP) break;
     }
@@ -608,7 +605,7 @@ pub fn kindLabel(kind: LocationKind) []const u8 {
 }
 
 fn firstPinForLocation(location_index: usize) ?usize {
-    for (pins, 0..) |pin, i| {
+    for (getPins(), 0..) |pin, i| {
         if (pin.location_index == location_index) return i;
     }
     return null;
@@ -616,7 +613,7 @@ fn firstPinForLocation(location_index: usize) ?usize {
 
 fn focusUser(state: *State, user_index: usize, el_w: f64, el_h: f64) void {
     const pin_i = firstPinForLocation(user_index) orelse return;
-    const pin = pins[pin_i];
+    const pin = getPins()[pin_i];
     const p = projectPin(pin, FLY_Z);
     state.camera = clampCamera(.{
         .x = p.x - el_w * 0.5,

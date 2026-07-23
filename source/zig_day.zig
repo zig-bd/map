@@ -1,23 +1,11 @@
 const std = @import("std");
+const types = @import("types");
 
 const page_url = "https://zig.day/";
 
-const Link = struct {
-    label: []const u8,
-    href: []const u8,
-};
-
-const Place = struct {
-    city: []const u8 = "",
-    lat: f64,
-    lng: f64,
-};
-
-const Event = struct {
-    name: []const u8,
-    places: []const Place,
-    links: []const Link = &.{},
-};
+const Link = types.Link;
+const Place = types.Place;
+const Event = types.Event;
 
 const EventsFile = struct {
     events: []const Event,
