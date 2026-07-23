@@ -673,10 +673,7 @@
     .{
         .username = "nurulhudaapon",
         .places = .{.{ .lat = 23.72308, .lng = 90.40902 }},
-        .links = .{
-            .{ .label = "Website", .href = "https://nurulhudaapon.com" },
-            .{ .label = "GitHub", .href = "https://github.com/nurulhudaapon" },
-        },
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/nurulhudaapon" }, .{ .label = "Website", .href = "https://nurulhudaapon.com" } },
     },
     .{
         .username = "nyk",

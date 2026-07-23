@@ -4,6 +4,8 @@
     --map-muted: #8fa0b8;
     --map-accent: #f0b429;
     --map-accent-soft: rgba(240, 180, 41, 0.28);
+    --map-event: #748847;
+    --map-event-soft: rgba(116, 136, 71, 0.28);
     --map-dock: rgba(7, 11, 20, 0.82);
     --map-line: rgba(255, 255, 255, 0.1);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -145,6 +147,20 @@ body {
     border-color: #fff6d8;
 }
 
+.map-pin.is-event {
+    background: var(--map-event);
+    box-shadow: 0 0 0 6px var(--map-event-soft);
+}
+
+.map-pin.is-event.is-hot {
+    box-shadow: 0 0 0 7px rgba(116, 136, 71, 0.32);
+}
+
+.map-pin.is-event.is-active {
+    box-shadow: 0 0 0 8px rgba(116, 136, 71, 0.45);
+    border-color: #e8efd8;
+}
+
 .map-controls {
     position: absolute;
     top: calc(0.85rem + var(--safe-top));
@@ -269,7 +285,9 @@ body {
 }
 
 .map-search-hit {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     width: 100%;
     margin: 0;
     padding: 0.4rem 0.55rem;
@@ -284,11 +302,36 @@ body {
     cursor: pointer;
 }
 
+.map-search-kind {
+    flex: none;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--map-accent);
+}
+
+.map-search-kind.is-event {
+    background: var(--map-event);
+}
+
+.map-search-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .map-search-hit:hover,
 .map-search-hit:focus-visible {
     background: rgba(240, 180, 41, 0.14);
     color: var(--map-accent);
     outline: none;
+}
+
+.map-search-hit.is-event:hover,
+.map-search-hit.is-event:focus-visible {
+    background: rgba(116, 136, 71, 0.18);
+    color: var(--map-event);
 }
 
 .map-join {
@@ -625,8 +668,15 @@ select.map-join-input {
 .map-dock-head {
     display: flex;
     align-items: baseline;
-    gap: 0.45rem;
+    flex-wrap: wrap;
+    gap: 0.45rem 1.1rem;
     margin-bottom: 0.4rem;
+}
+
+.map-dock-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
 }
 
 .map-dock-title {
@@ -640,6 +690,10 @@ select.map-join-input {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
     color: var(--map-accent);
+}
+
+.map-dock-stat.is-event .map-dock-count {
+    color: var(--map-event);
 }
 
 .map-dock-list {

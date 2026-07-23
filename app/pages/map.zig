@@ -45,12 +45,51 @@ pub const User = struct {
     links: []const Link = &.{},
 };
 
-pub const Users = struct {
-    users: []const User,
+pub const Event = struct {
+    name: []const u8,
+    places: []const Place,
+    links: []const Link = &.{},
+};
+
+pub const Location = union(enum) {
+    user: User,
+    event: Event,
+
+    pub fn name(self: Location) []const u8 {
+        return switch (self) {
+            .user => |u| u.username,
+            .event => |e| e.name,
+        };
+    }
+
+    pub fn places(self: Location) []const Place {
+        return switch (self) {
+            .user => |u| u.places,
+            .event => |e| e.places,
+        };
+    }
+
+    pub fn links(self: Location) []const Link {
+        return switch (self) {
+            .user => |u| u.links,
+            .event => |e| e.links,
+        };
+    }
+
+    pub fn mascot(self: Location) ?Mascot {
+        return switch (self) {
+            .user => |u| if (u.avatar) |a| a.mascot else null,
+            .event => null,
+        };
+    }
+
+    pub fn isEvent(self: Location) bool {
+        return self == .event;
+    }
 };
 
 pub const Pin = struct {
-    user_index: usize,
+    location_index: usize,
     username: []const u8,
     city: []const u8,
     lat: f64,
@@ -59,6 +98,7 @@ pub const Pin = struct {
     my: f64,
     links: []const Link,
     mascot: ?Mascot = null,
+    is_event: bool = false,
 };
 
 pub const Camera = struct {
@@ -163,35 +203,54 @@ pub const TileView = struct {
 };
 
 pub const DockEntry = struct {
-    user_index: usize,
+    location_index: usize,
     username: []const u8,
     first_city: []const u8,
     extra_places: usize = 0,
     place_label: []const u8 = "",
+    is_event: bool = false,
 };
 
-// TODO: load from remote
-pub const users: Users = @import("users.zon");
+const users_file: struct { users: []const User } = @import("users.zon");
+const events_file: struct { events: []const Event } = @import("events.zon");
+
+pub const locations: []const Location = blk: {
+    @setEvalBranchQuota(100_000);
+    const n = users_file.users.len + events_file.events.len;
+    var arr: [n]Location = undefined;
+    var i: usize = 0;
+    for (users_file.users) |u| {
+        arr[i] = .{ .user = u };
+        i += 1;
+    }
+    for (events_file.events) |e| {
+        arr[i] = .{ .event = e };
+        i += 1;
+    }
+    const frozen = arr;
+    break :blk &frozen;
+};
 
 pub const pins: []const Pin = blk: {
     @setEvalBranchQuota(100_000);
     var n: usize = 0;
-    for (users.users) |u| n += u.places.len;
+    for (locations) |loc| n += loc.places().len;
     var arr: [n]Pin = undefined;
     var i: usize = 0;
-    for (users.users, 0..) |u, ui| {
-        for (u.places) |place| {
+    for (locations, 0..) |loc, li| {
+        for (loc.places()) |place| {
             const m = mercatorNorm(place.lat, place.lng);
             arr[i] = .{
-                .user_index = ui,
-                .username = u.username,
+                .location_index = li,
+                .username = loc.name(),
                 .city = place.city,
                 .lat = place.lat,
                 .lng = place.lng,
                 .mx = m.x,
                 .my = m.y,
-                .links = u.links,
-                .mascot = if (u.avatar) |a| a.mascot else null,
+                .links = loc.links(),
+                .mascot = loc.mascot(),
+                .is_event = loc.isEvent(),
             };
             i += 1;
         }
@@ -424,12 +483,12 @@ fn fmtDockPlace(allocator: zx.Allocator, first_city: []const u8, extra: usize) !
 }
 
 pub fn collectDockEntries(allocator: zx.Allocator, out: *std.ArrayListUnmanaged(DockEntry), visible: []const Pin) void {
-    const index_of = allocator.alloc(?usize, users.users.len) catch return;
+    const index_of = allocator.alloc(?usize, locations.len) catch return;
     defer allocator.free(index_of);
     @memset(index_of, null);
 
     for (visible) |pin| {
-        if (index_of[pin.user_index]) |ei| {
+        if (index_of[pin.location_index]) |ei| {
             out.items[ei].extra_places += 1;
             out.items[ei].place_label = fmtDockPlace(
                 allocator,
@@ -437,13 +496,14 @@ pub fn collectDockEntries(allocator: zx.Allocator, out: *std.ArrayListUnmanaged(
                 out.items[ei].extra_places,
             ) catch out.items[ei].first_city;
         } else {
-            index_of[pin.user_index] = out.items.len;
+            index_of[pin.location_index] = out.items.len;
             out.append(allocator, .{
-                .user_index = pin.user_index,
+                .location_index = pin.location_index,
                 .username = pin.username,
                 .first_city = pin.city,
                 .extra_places = 0,
                 .place_label = pin.city,
+                .is_event = pin.is_event,
             }) catch {};
         }
     }
@@ -467,29 +527,39 @@ fn containsIgnoreCase(haystack: []const u8, needle: []const u8) bool {
 
 pub fn collectSearchResults(allocator: zx.Allocator, query: []const u8, out: *std.ArrayListUnmanaged(usize)) void {
     if (query.len == 0) return;
-    for (users.users, 0..) |user, ui| {
-        if (!containsIgnoreCase(user.username, query)) continue;
-        out.append(allocator, ui) catch {};
+    for (locations, 0..) |loc, li| {
+        if (!containsIgnoreCase(loc.name(), query)) continue;
+        out.append(allocator, li) catch {};
         if (out.items.len >= SEARCH_RESULT_CAP) break;
     }
 }
 
 pub fn pinClass(tip: Tip, i: usize, pin: Pin) []const u8 {
     const mascot = pin.mascot != null;
-    if (tip.selected == i) return if (mascot) "map-pin has-mascot is-active" else "map-pin is-active";
-    if (tip.hovered == i) return if (mascot) "map-pin has-mascot is-hot" else "map-pin is-hot";
-    return if (mascot) "map-pin has-mascot" else "map-pin";
+    if (mascot) {
+        if (tip.selected == i) return "map-pin has-mascot is-active";
+        if (tip.hovered == i) return "map-pin has-mascot is-hot";
+        return "map-pin has-mascot";
+    }
+    if (pin.is_event) {
+        if (tip.selected == i) return "map-pin is-event is-active";
+        if (tip.hovered == i) return "map-pin is-event is-hot";
+        return "map-pin is-event";
+    }
+    if (tip.selected == i) return "map-pin is-active";
+    if (tip.hovered == i) return "map-pin is-hot";
+    return "map-pin";
 }
 
-fn firstPinForUser(user_index: usize) ?usize {
+fn firstPinForLocation(location_index: usize) ?usize {
     for (pins, 0..) |pin, i| {
-        if (pin.user_index == user_index) return i;
+        if (pin.location_index == location_index) return i;
     }
     return null;
 }
 
 fn focusUser(state: *State, user_index: usize, el_w: f64, el_h: f64) void {
-    const pin_i = firstPinForUser(user_index) orelse return;
+    const pin_i = firstPinForLocation(user_index) orelse return;
     const pin = pins[pin_i];
     const p = projectPin(pin, FLY_Z);
     state.camera = clampCamera(.{
