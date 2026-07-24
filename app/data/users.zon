@@ -50,6 +50,11 @@
         .links = .{ .{ .label = "sourcehut", .href = "https://sr.ht/~andreafeletto" }, .{ .label = "Website", .href = "https://andreafeletto.com" } },
     },
     .{
+        .username = "Andrew-Velox",
+        .places = .{.{ .lat = 23.83099, .lng = 90.55631 }},
+        .links = .{ .{ .label = "GitHub", .href = "https://github.com/Andrew-Velox" }, .{ .label = "Website", .href = "andrew-velox.github.io" } },
+    },
+    .{
         .username = "andrewzah",
         .places = .{.{ .lat = 37.561514, .lng = 126.912798 }},
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/andrewzah" }, .{ .label = "Website", .href = "https://andrewzah.com" } },
@@ -403,7 +408,7 @@
     },
     .{
         .username = "JanBeelte",
-        .places = .{.{ .lat = 49.4360136, .lng = 10.9708601 }},
+        .places = .{.{ .lat = 49.45545786575521, .lng = 11.077250699807033 }},
         .links = .{
             .{ .label = "Codeberg", .href = "https://codeberg.org/JanBeelte" },
             .{ .label = "GitHub", .href = "https://github.com/JanBeelte" },
