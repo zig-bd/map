@@ -48,7 +48,6 @@ pub fn run(io: std.Io, allocator: std.mem.Allocator, out_path: []const u8) !void
 
     while (try walker.next(io)) |entry| {
         if (entry.kind != .file) continue;
-        if (!std.mem.endsWith(u8, entry.basename, ".json")) continue;
 
         const file_raw = try entry.dir.readFileAlloc(io, entry.basename, allocator, .limited(256 * 1024));
         defer allocator.free(file_raw);

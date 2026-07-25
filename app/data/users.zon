@@ -185,6 +185,15 @@
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/cztomsik" }, .{ .label = "Website", .href = "https://tomsik.cz" } },
     },
     .{
+        .username = "darltrash",
+        .places = .{.{ .lat = -35.4269444, .lng = -71.6655555 }},
+        .links = .{
+            .{ .label = "Github", .href = "https://github.com/darltrash" },
+            .{ .label = "Organization", .href = "https://starlightnet.work" },
+            .{ .label = "Website", .href = "https://n.cyrneko.eu" },
+        },
+    },
+    .{
         .username = "DemonKingSwarn",
         .places = .{.{ .lat = 23.035904, .lng = 84.538163 }},
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/DemonKingSwarn" }, .{ .label = "Website", .href = "https://demonkingswarn.is-a.dev" } },
@@ -291,6 +300,11 @@
         .username = "g-w1",
         .places = .{.{ .lat = 40.778, .lng = -73.982 }},
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/g-w1/" }, .{ .label = "Website", .href = "https://g-w1.github.io/blog/" } },
+    },
+    .{
+        .username = "garrett",
+        .places = .{.{ .lat = 33.351614, .lng = -86.607635 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/garrettprimm" }},
     },
     .{
         .username = "gb82",
@@ -705,6 +719,11 @@
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/osamamragab" }, .{ .label = "Website", .href = "https://osamamragab.github.io" } },
     },
     .{
+        .username = "osuwaidi",
+        .places = .{.{ .lat = 25.18, .lng = 55.42 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/OSuwaidi" }},
+    },
+    .{
         .username = "Painhardcore",
         .places = .{.{ .lat = 59.90230804899131, .lng = 30.451644926267342 }},
         .links = .{
@@ -908,6 +927,11 @@
         .username = "The Computer Guy",
         .places = .{.{ .lat = 33.2260995, .lng = -117.3875804 }},
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/RossComputerGuy" }, .{ .label = "Website", .href = "https://tristanxr.com" } },
+    },
+    .{
+        .username = "theunsgk",
+        .places = .{.{ .lat = -25.739408311793227, .lng = 28.273426036010452 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/Theunsgk" }},
     },
     .{
         .username = "tiagoantao",
