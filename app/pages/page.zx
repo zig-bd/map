@@ -26,6 +26,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     const tip_v = state_v.tip;
     const search_v = state_v.search;
     const join_v = state_v.join;
+    const sources_open = state_v.sources_open;
 
     const cities = if (is_client)
         map.initPlaces(ctx.state(map.Places, .{ .places = &.{} }), join_v.open)
@@ -222,6 +223,16 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 >
                     <component.AddUserIcon />
                 </button>
+                <button
+                    type="button"
+                    class={if (sources_open) "map-ctrl is-active" else "map-ctrl"}
+                    onclick={ctx.bind(map.onSourcesToggle)}
+                    aria-label="Data sources"
+                    aria-expanded={if (sources_open) "true" else "false"}
+                    aria-haspopup="menu"
+                >
+                    <component.MoreIcon />
+                </button>
             </div>
 
             {if (is_client and search_v.open) (
@@ -269,6 +280,57 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                             )}
                         </ul>
                     )}
+                </div>
+            )}
+
+            {if (is_client and sources_open) (
+                <div
+                    class="map-sources"
+                    role="menu"
+                    aria-label="Data sources"
+                    onpointerdown={ctx.bind(map.onControlsPointer)}
+                    onwheel={ctx.bind(map.onDockWheel)}
+                >
+                    <p class="map-sources-title">Sources</p>
+                    <a
+                        class="map-sources-item"
+                        role="menuitem"
+                        href="https://github.com/zig-community/user-map"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <span class="map-sources-kind" aria-hidden="true"></span>
+                        <span class="map-sources-meta">
+                            <span class="map-sources-label">Users</span>
+                            <span class="map-sources-name">zig-community/user-map</span>
+                        </span>
+                    </a>
+                    <a
+                        class="map-sources-item"
+                        role="menuitem"
+                        href="https://zig.day/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <span class="map-sources-kind is-event" aria-hidden="true"></span>
+                        <span class="map-sources-meta">
+                            <span class="map-sources-label">Events</span>
+                            <span class="map-sources-name">zig.day</span>
+                        </span>
+                    </a>
+                    <a
+                        class="map-sources-item"
+                        role="menuitem"
+                        href="https://ziglang.org/download/index.json"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <span class="map-sources-kind is-mirror" aria-hidden="true"></span>
+                        <span class="map-sources-meta">
+                            <span class="map-sources-label">Mirrors</span>
+                            <span class="map-sources-name">ziglang.org/download</span>
+                        </span>
+                    </a>
                 </div>
             )}
 
@@ -443,8 +505,9 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
             )}
 
             <p class="map-attrib">
-                © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
-                · © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>
+                © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OSM</a>
+                · <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>
+                · <a href="https://github.com/zig-community/user-map" target="_blank" rel="noopener noreferrer">zig-community</a>
             </p>
         </div>
     );

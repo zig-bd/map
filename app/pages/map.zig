@@ -135,6 +135,7 @@ pub const State = struct {
     tip: Tip = .{},
     search: Search = .{},
     join: Join = .{},
+    sources_open: bool = false,
 };
 
 pub const TileView = struct {
@@ -1112,9 +1113,25 @@ pub fn onSearchToggle(e: *zx.client.Event.Stateful) void {
     var next = state.get();
     next.search.open = !next.search.open;
     if (!next.search.open) next.search.len = 0;
-    if (next.search.open) next.join.open = false;
+    if (next.search.open) {
+        next.join.open = false;
+        next.sources_open = false;
+    }
     state.set(next);
     if (next.search.open) focusElement("map-search-input");
+}
+
+pub fn onSourcesToggle(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    const state = clientState(e) orelse return;
+    var next = state.get();
+    next.sources_open = !next.sources_open;
+    if (next.sources_open) {
+        next.search.open = false;
+        next.search.len = 0;
+        next.join.open = false;
+    }
+    state.set(next);
 }
 
 pub fn onSearchInput(e: *zx.client.Event.Stateful) void {
@@ -1126,6 +1143,8 @@ pub fn onSearchInput(e: *zx.client.Event.Stateful) void {
     if (n > 0) @memcpy(next.search.query[0..n], raw[0..n]);
     next.search.len = n;
     next.search.open = true;
+    next.join.open = false;
+    next.sources_open = false;
     state.set(next);
 }
 
@@ -1176,6 +1195,7 @@ pub fn onJoinToggle(e: *zx.client.Event.Stateful) void {
     if (next.join.open) {
         next.search.open = false;
         next.search.len = 0;
+        next.sources_open = false;
         next.join.err = .none;
     }
     state.set(next);

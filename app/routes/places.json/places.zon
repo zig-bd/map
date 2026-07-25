@@ -327,4 +327,4 @@
     .{ .name = "Yokohama", .country = "Japan", .lat = 35.4437, .lng = 139.638 },
     .{ .name = "Zagreb", .country = "Croatia", .lat = 45.815, .lng = 15.9819 },
     .{ .name = "Zürich", .country = "Switzerland", .lat = 47.3769, .lng = 8.5417 },
-}}
+} }
