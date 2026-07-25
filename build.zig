@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) !void {
         .app = .{
             .client = .{
                 .bindings = .{
-                    .from_source = true,
+                    .build = .enabled,
                 },
             },
         },
