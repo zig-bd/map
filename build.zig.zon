@@ -9,8 +9,8 @@
             .hash = "N-V-__8AAKsnBQC52IY79HuB1adcveDcx3eh0rcAHrYTLF-y",
         },
         .ziex = .{
-            .url = "git+https://github.com/ziex-dev/ziex#1ac7cde690527221906f8c04b3213dd415c014a7",
-            .hash = "ziex-0.1.0-dev-Z3YcvfwTlwFH6c9tS5k70xnac4O9jB-UiTvo7UFaapOs",
+            .url = "git+https://github.com/ziex-dev/ziex#b087d8463192f659668496323a6eef381baada6e",
+            .hash = "ziex-0.1.0-dev-Z3YcvRYYlwFqHtjLG7MPvflcEkK9krozd_WiwPVX_w6D",
         },
     },
     .paths = .{
