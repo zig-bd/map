@@ -10,7 +10,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const app_exe = b.addExecutable(.{
-        .name = "ziguanas",
+        .name = "zig_world_map",
         .root_module = b.createModule(.{
             .root_source_file = b.path("app/main.zig"),
             .target = target,

@@ -1,5 +1,6 @@
-## Map of Ziguanas
+## Zig World Map
 
+World map of Zig programmers, events, and mirrors.
 
 ## Developing
 Requirements: `zig` (0.17.0-dev.1422)

@@ -2,7 +2,7 @@ pub fn Layout(ctx: zx.LayoutContext, children: zx.Component) zx.Component {
     return (
         <html @allocator={ctx.arena} lang="en">
             <head>
-                <title>Ziguanas</title>
+                <title>Zig World Map</title>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <link rel="preload" href="/locations.json" as="fetch" crossorigin="anonymous" />

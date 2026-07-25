@@ -1,7 +1,7 @@
 .{
-    .name = .ziguanas,
+    .name = .zig_world_map,
     .version = "0.1.0",
-    .fingerprint = 0x1666077679e2ffe7,
+    .fingerprint = 0x12cfb3f84045cdd,
     .minimum_zig_version = "0.17.0-dev.1422+e863bf3be",
     .dependencies = .{
         .zig_branding = .{
