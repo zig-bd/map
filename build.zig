@@ -22,7 +22,6 @@ pub fn build(b: *std.Build) !void {
     });
 
     _ = try ziex.init(b, app_exe, .{
-        .cli = .{ .zig_path = "zig", .optimize = optimize },
         .app = .{
             .client = .{
                 .bindings = .{
@@ -53,7 +52,7 @@ pub fn build(b: *std.Build) !void {
             },
         }),
     });
-    const source_step = b.step("source", "Fetch external map sources (zig_community, zig_day, zig_mirrors)");
+    const source_step = b.step("source", "Fetch external map sources (all | zig_community | zig_day | zig_mirrors)");
     const source_run = b.addRunArtifact(source_exe);
     source_run.has_side_effects = true;
     source_run.setCwd(b.path("."));

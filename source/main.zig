@@ -13,10 +13,14 @@ pub fn main(init: std.process.Init) !void {
     _ = args.next(); // program name
 
     const source_name = args.next() orelse {
-        std.log.err("usage: zig build source -- <name>", .{});
-        std.log.err("available: zig_community, zig_day, zig_mirrors", .{});
-        return error.MissingSourceName;
+        try runAll(init.io, allocator);
+        return;
     };
+
+    if (std.mem.eql(u8, source_name, "all")) {
+        try runAll(init.io, allocator);
+        return;
+    }
 
     if (std.mem.eql(u8, source_name, "zig_community")) {
         const out_path = args.next() orelse "app/data/users.zon";
@@ -37,5 +41,12 @@ pub fn main(init: std.process.Init) !void {
     }
 
     std.log.err("unknown source: {s}", .{source_name});
+    std.log.err("available: all, zig_community, zig_day, zig_mirrors", .{});
     return error.UnknownSource;
+}
+
+fn runAll(io: std.Io, allocator: std.mem.Allocator) !void {
+    try zig_community.run(io, allocator, "app/data/users.zon");
+    try zig_day.run(io, allocator, "app/data/events.zon");
+    try zig_mirrors.run(io, allocator, "app/data/mirrors.zon");
 }

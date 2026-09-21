@@ -30,7 +30,7 @@
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/ABuffSeagull" }, .{ .label = "Website", .href = "https://abuffseagull.dev" } },
     },
     .{
-        .username = "alexnasko\xcf\x82",
+        .username = "alexnaskoς",
         .places = .{.{ .lat = 40.629269, .lng = 22.947412 }},
         .links = .{.{ .label = "GitHub", .href = "https://github.com/alexnask" }},
     },
@@ -675,6 +675,15 @@
         },
     },
     .{
+        .username = "neurocyte",
+        .places = .{.{ .lat = 49.738283, .lng = 8.970251 }},
+        .links = .{
+            .{ .label = "Codeberg", .href = "https://codeberg.org/neurocyte" },
+            .{ .label = "GitHub", .href = "https://github.com/neurocyte" },
+            .{ .label = "Website", .href = "https://flow-control.dev" },
+        },
+    },
+    .{
         .username = "neuroDEVergent",
         .places = .{.{ .lat = 44.80401, .lng = 20.46513 }},
         .links = .{
@@ -682,6 +691,11 @@
             .{ .label = "Website", .href = "https://braticpetar.xyz/" },
             .{ .label = "YouTube", .href = "https://www.youtube.com/@undeniable_dillema" },
         },
+    },
+    .{
+        .username = "Nexxii",
+        .places = .{.{ .lat = 41.3874, .lng = 2.1686 }},
+        .links = .{.{ .label = "GitHub", .href = "https://github.com/nexxii04" }},
     },
     .{
         .username = "nimaidev",
@@ -1028,7 +1042,7 @@
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/Zorgatone" }, .{ .label = "LinkedIn", .href = "https://www.linkedin.com/in/zorgatone" } },
     },
     .{
-        .username = "\xe3\x8e\x9d",
+        .username = "㎝",
         .places = .{.{ .lat = 45.44806881985764, .lng = 9.205307867512765 }},
         .links = .{ .{ .label = "GitHub", .href = "https://github.com/C8E" }, .{ .label = "Website", .href = "file:///dev/null" } },
     },

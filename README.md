@@ -3,7 +3,7 @@
 World map of Zig programmers, events, and mirrors.
 
 ## Developing
-Requirements: `zig` (0.17.0-dev.1422)
+Requirements: `zig` (0.17.0-dev.2248)
 
 Start dev server (http://localhost:3000):
 ```bash

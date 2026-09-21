@@ -18,7 +18,6 @@ const FLY_Z: f64 = 7.0;
 const SEARCH_RESULT_CAP: usize = 12;
 const MIN_PINCH_DIST: f64 = 16.0;
 const PAN_COMMIT_PX: f64 = 384.0;
-const TILE_PAD_PX: f64 = 512.0;
 /// iOS Safari can expose negative pointerIds.
 const NO_POINTER: i32 = -1;
 
@@ -138,15 +137,6 @@ pub const State = struct {
     sources_open: bool = false,
 };
 
-pub const TileView = struct {
-    z: u8,
-    x: u32,
-    y: u32,
-    left: f64,
-    top: f64,
-    size: f64,
-};
-
 pub const DockEntry = struct {
     location_index: usize,
     username: []const u8,
@@ -161,7 +151,7 @@ pub const LocationsData = struct {
     ready: bool = false,
 };
 
-/// Component-owned state exposed to the async fetch callback.
+/// Component-owned state filled by blocking client fetch (JSPI).
 pub var places: *zx.State(Places) = undefined;
 var places_fetch_started = false;
 
@@ -204,74 +194,28 @@ pub fn initLocations(state: *zx.State(LocationsData), load: bool) LocationsData 
 fn fetchPlaces() void {
     if (!zx.platform.isClient() or places_fetch_started or places.get().places.len > 0) return;
     places_fetch_started = true;
-    _ = zx.fetch(.wasm(&onPlacesFetch), zx.allocator, "/places.json", .{}) catch {
-        places_fetch_started = false;
-    };
+
+    var response = (zx.fetch(.blocking, zx.allocator, "/places.json", .{}) catch return) orelse return;
+    defer response.deinit();
+    if (!response.ok()) return;
+    const text = response.text() catch return;
+    const loaded = zx.util.zxon.parse(Places, zx.allocator, text, .{}) catch return;
+    // Assign in-place so this render sees the data without an extra scheduleRender.
+    places.value = loaded;
 }
 
 fn fetchLocations() void {
     if (!zx.platform.isClient() or locations_fetch_started or locations.get().ready) return;
     locations_fetch_started = true;
-    _ = zx.fetch(.wasm(&onLocationsFetch), zx.allocator, "/locations.json", .{}) catch {
-        locations_fetch_started = false;
-    };
-}
 
-fn onPlacesFetch(response: ?*zx.Fetch.Response, err: ?zx.Fetch.FetchError) void {
-    if (err != null) {
-        places_fetch_started = false;
-        return;
-    }
-    const res = response orelse {
-        places_fetch_started = false;
-        return;
-    };
-    defer res.deinit();
-    if (!res.ok()) {
-        places_fetch_started = false;
-        return;
-    }
-    const text = res.text() catch {
-        places_fetch_started = false;
-        return;
-    };
-    const loaded = zx.util.zxon.parse(Places, zx.allocator, text, .{}) catch {
-        places_fetch_started = false;
-        return;
-    };
-    places_fetch_started = false;
-    places.set(loaded);
-}
-
-fn onLocationsFetch(response: ?*zx.Fetch.Response, err: ?zx.Fetch.FetchError) void {
-    if (err != null) {
-        locations_fetch_started = false;
-        return;
-    }
-    const res = response orelse {
-        locations_fetch_started = false;
-        return;
-    };
-    defer res.deinit();
-    if (!res.ok()) {
-        locations_fetch_started = false;
-        return;
-    }
-    const text = res.text() catch {
-        locations_fetch_started = false;
-        return;
-    };
-    var data = zx.util.zxon.parse(LocationsData, zx.allocator, text, .{}) catch {
-        locations_fetch_started = false;
-        return;
-    };
-    data.pins = allocPins(data) catch {
-        locations_fetch_started = false;
-        return;
-    };
+    var response = (zx.fetch(.blocking, zx.allocator, "/locations.json", .{}) catch return) orelse return;
+    defer response.deinit();
+    if (!response.ok()) return;
+    const text = response.text() catch return;
+    var data = zx.util.zxon.parse(LocationsData, zx.allocator, text, .{}) catch return;
+    data.pins = allocPins(data) catch return;
     data.ready = true;
-    locations_fetch_started = false;
-    locations.set(data);
+    locations.value = data;
 }
 
 fn allocPins(data: LocationsData) ![]const Pin {
@@ -370,6 +314,28 @@ fn mercatorNorm(lat: f64, lng: f64) struct { x: f64, y: f64 } {
     };
 }
 
+fn cameraCenterLngLat(cam: Camera, el_w: f64, el_h: f64) struct { lng: f64, lat: f64 } {
+    const w = worldSize(cam.z);
+    const cx = (cam.x + el_w * 0.5) / w;
+    const cy = (cam.y + el_h * 0.5) / w;
+    const lng = cx * 360.0 - 180.0;
+    const n = std.math.pi - 2.0 * std.math.pi * cy;
+    const lat = std.math.atan(std.math.sinh(n)) * (180.0 / std.math.pi);
+    return .{ .lng = lng, .lat = lat };
+}
+
+/// Push Zig camera into MapLibre (interactive:false; Zig owns pan/zoom).
+pub fn syncBasemap(cam: Camera, el_w: f64, el_h: f64) void {
+    if (!zx.platform.isClient()) return;
+    const ll = cameraCenterLngLat(cam, el_w, el_h);
+    const ml_z = cam.z - 1.0;
+    const win = js.global.get(js.Object, "window") catch return;
+    defer win.deinit();
+    const basemap = win.get(js.Object, "__zigBasemap") catch return;
+    defer basemap.deinit();
+    basemap.call(void, "sync", .{ ll.lng, ll.lat, ml_z }) catch {};
+}
+
 fn projectPin(pin: Pin, z: f64) struct { x: f64, y: f64 } {
     const w = worldSize(z);
     return .{ .x = pin.mx * w, .y = pin.my * w };
@@ -422,11 +388,6 @@ pub fn zoomTo(cam: Camera, new_z: f64, focus_x: f64, focus_y: f64, el_w: f64, el
     }, el_w, el_h);
 }
 
-pub fn displayTileZoom(z: f64) u8 {
-    const clamped = std.math.clamp(z, 0, MAX_Z);
-    return @intFromFloat(@min(@floor(clamped + 0.72), MAX_Z));
-}
-
 pub fn screenPos(pin: Pin, cam: Camera) struct { x: f64, y: f64 } {
     const p = projectPin(pin, cam.z);
     return .{ .x = p.x - cam.x, .y = p.y - cam.y };
@@ -451,41 +412,6 @@ fn hitPinIndex(sx: f64, sy: f64, cam: Camera) ?usize {
         }
     }
     return best_i;
-}
-
-pub fn collectTilesAt(
-    allocator: zx.Allocator,
-    out: *std.ArrayListUnmanaged(TileView),
-    cam: Camera,
-    el_w: f64,
-    el_h: f64,
-    z_tile: u8,
-) void {
-    const tile_span = TILE * std.math.exp2(cam.z - @as(f64, @floatFromInt(z_tile)));
-    const n: i32 = @intCast(@as(u32, 1) << @intCast(z_tile));
-    const pad = TILE_PAD_PX;
-
-    const x0: i32 = @intFromFloat(@floor((cam.x - pad) / tile_span));
-    const y0: i32 = @intFromFloat(@floor((cam.y - pad) / tile_span));
-    const x1: i32 = @intFromFloat(@floor((cam.x + el_w + pad) / tile_span));
-    const y1: i32 = @intFromFloat(@floor((cam.y + el_h + pad) / tile_span));
-
-    var ty = y0;
-    while (ty <= y1) : (ty += 1) {
-        if (ty < 0 or ty >= n) continue;
-        var tx = x0;
-        while (tx <= x1) : (tx += 1) {
-            if (tx < 0 or tx >= n) continue;
-            out.append(allocator, .{
-                .z = z_tile,
-                .x = @intCast(tx),
-                .y = @intCast(ty),
-                .left = @as(f64, @floatFromInt(tx)) * tile_span - cam.x,
-                .top = @as(f64, @floatFromInt(ty)) * tile_span - cam.y,
-                .size = tile_span,
-            }) catch {};
-        }
-    }
 }
 
 pub fn collectVisiblePinIndices(
@@ -738,6 +664,8 @@ fn flushCamPreview() void {
     cam_preview = .{};
     state.set(next);
     clearWorldTransform();
+    const size = stageSize();
+    syncBasemap(clampCamera(next.camera, size.w, size.h), size.w, size.h);
 }
 
 fn flushCamPreviewNow() void {
@@ -789,6 +717,8 @@ fn clearDrag(next: *State) void {
 fn publishWithClear(state: *zx.State(State), next: State) void {
     state.set(next);
     clearWorldTransform();
+    const size = stageSize();
+    syncBasemap(clampCamera(next.camera, size.w, size.h), size.w, size.h);
 }
 
 fn settleLivePan(state: *zx.State(State), next: *State, d: *Drag, el_w: f64, el_h: f64) void {
@@ -1104,7 +1034,9 @@ pub fn onReset(e: *zx.client.Event.Stateful) void {
     clearWorldTransform();
     refreshStageCache();
     const size = stageSize();
-    state.set(.{ .camera = initialCamera(size.w, size.h) });
+    const cam = initialCamera(size.w, size.h);
+    state.set(.{ .camera = cam });
+    syncBasemap(cam, size.w, size.h);
 }
 
 pub fn onSearchToggle(e: *zx.client.Event.Stateful) void {
@@ -1159,6 +1091,7 @@ pub fn onSelectUser(e: *zx.client.Event.Stateful) void {
     focusUser(&next, user_index, size.w, size.h);
     next.search = .{};
     state.set(next);
+    syncBasemap(clampCamera(next.camera, size.w, size.h), size.w, size.h);
 }
 
 fn elementAttr(e: *zx.client.Event.Stateful, comptime attr: []const u8) ?[]const u8 {
@@ -1503,27 +1436,6 @@ pub fn fmtCityOption(allocator: zx.Allocator, index: usize) []const u8 {
 
 pub fn fmtCityLabel(allocator: zx.Allocator, city: City) []const u8 {
     return std.fmt.allocPrint(allocator, "{s}, {s}", .{ city.name, city.country }) catch city.name;
-}
-
-pub fn fmtTileSrc(allocator: zx.Allocator, tile: TileView) []const u8 {
-    return std.fmt.allocPrint(
-        allocator,
-        "https://basemaps.cartocdn.com/rastertiles/voyager/{d}/{d}/{d}.png",
-        .{ tile.z, tile.x, tile.y },
-    ) catch "";
-}
-
-pub fn fmtTileKey(allocator: zx.Allocator, tile: TileView) []const u8 {
-    return std.fmt.allocPrint(allocator, "{d}/{d}/{d}", .{ tile.z, tile.x, tile.y }) catch "";
-}
-
-pub fn fmtTileStyle(allocator: zx.Allocator, tile: TileView) []const u8 {
-    const scale = tile.size / TILE;
-    return std.fmt.allocPrint(
-        allocator,
-        "transform:translate3d({d:.2}px,{d:.2}px,0) scale({d:.5})",
-        .{ tile.left, tile.top, scale },
-    ) catch "";
 }
 
 fn fmtScreenPoint(allocator: zx.Allocator, pin: Pin, cam: Camera) []const u8 {

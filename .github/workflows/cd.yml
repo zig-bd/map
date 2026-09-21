@@ -6,9 +6,14 @@ on:
       - main
     paths:
       - 'app/**'
-      - 'build.zig.zon'
+      - '!app/data/**'
+      - 'source/**'
       - 'build.zig'
+      - 'build.zig.zon'
       - '.github/workflows/cd.yml'
+
+  schedule:
+    - cron: '0 6 * * 1'
 
   workflow_dispatch:
 
@@ -22,7 +27,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  source:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,7 +36,37 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: 0.17.0-dev.1413+addc3c3b8
+          version: 0.17.0-dev.2248+3f6a02acd
+          use-tool-cache: true
+
+      - name: Fetch location sources
+        run: zig build source -- all
+
+      - name: Upload location data
+        uses: actions/upload-artifact@v4
+        with:
+          name: location-data
+          path: app/data/
+          if-no-files-found: error
+
+  build:
+    runs-on: ubuntu-latest
+    needs: source
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download location data
+        uses: actions/download-artifact@v4
+        with:
+          name: location-data
+          path: app/data
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0-dev.2248+3f6a02acd
+          use-tool-cache: true
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

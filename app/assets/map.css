@@ -94,33 +94,21 @@ body {
     backface-visibility: hidden;
 }
 
-.map-tiles {
+.map-basemap {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    overflow: visible;
-    background: #c8d2c0;
+    overflow: hidden;
+    background: var(--map-bg);
 }
 
-.map-tile {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 256px;
-    height: 256px;
-    display: block;
-    pointer-events: none;
-    image-rendering: auto;
-    transform-origin: 0 0;
-}
-
-.map-tile-parent {
-    z-index: 0;
-}
-
-.map-tile-main {
-    z-index: 1;
+.map-basemap .maplibregl-map,
+.map-basemap .maplibregl-canvas-container,
+.map-basemap .maplibregl-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
 }
 
 .map-pins {

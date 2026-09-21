@@ -10,6 +10,11 @@
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/europe/bristol/" }},
     },
     .{
+        .name = "Cologne",
+        .places = .{.{ .lat = 50.93813103563488, .lng = 6.959530265140128 }},
+        .links = .{.{ .label = "Zig Day", .href = "https://zig.day/europe/cologne/" }},
+    },
+    .{
         .name = "Kitchener-Waterloo",
         .places = .{.{ .lat = 43.463096919326425, .lng = -80.52014597609322 }},
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/canada/kitchener-waterloo/" }},
@@ -35,7 +40,7 @@
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/usa/new-york/" }},
     },
     .{
-        .name = "N\xc3\xbcrnberg",
+        .name = "Nürnberg",
         .places = .{.{ .lat = 49.45545786575521, .lng = 11.077250699807033 }},
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/europe/nuremberg/" }},
     },
@@ -65,19 +70,9 @@
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/europe/stockholm/" }},
     },
     .{
-        .name = "Val\xc3\xa8ncia",
-        .places = .{.{ .lat = 39.46980885600718, .lng = -0.3770197899509868 }},
-        .links = .{.{ .label = "Zig Day", .href = "https://zig.day/europe/valencia/" }},
-    },
-    .{
         .name = "Vancouver",
         .places = .{.{ .lat = 49.26094990562651, .lng = -123.11370383861274 }},
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/canada/vancouver/" }},
-    },
-    .{
-        .name = "Zig Day Boston @ Systems Distributed '26",
-        .places = .{.{ .lat = 42.36223861159525, .lng = -71.08637972955279 }},
-        .links = .{.{ .label = "Zig Day", .href = "https://zig.day/special/0/" }},
     },
     .{
         .name = "Zigtoberfest '26",
@@ -85,12 +80,12 @@
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/special/2/" }},
     },
     .{
-        .name = "\xd0\x91\xd0\xb5\xd0\xbe\xd0\xb3\xd1\x80\xd0\xb0\xd0\xb4 (Belgrade)",
+        .name = "Београд (Belgrade)",
         .places = .{.{ .lat = 44.81059453835043, .lng = 20.46240630288894 }},
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/europe/belgrade/" }},
     },
     .{
-        .name = "\xe5\xa4\xa7\xe9\x98\xaa\xe5\xb8\x82 (\xc5\x8csaka)",
+        .name = "大阪市 (Ōsaka)",
         .places = .{.{ .lat = 34.69400121186878, .lng = 135.5024994891254 }},
         .links = .{.{ .label = "Zig Day", .href = "https://zig.day/japan/osaka/" }},
     },

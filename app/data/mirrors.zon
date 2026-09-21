@@ -11,9 +11,9 @@
     .{
         .name = "pkg.earth",
         .places = .{.{
-            .lat = 50.6924,
-            .lng = 3.20113,
-            .city = "Roubaix",
+            .lat = 51.4808,
+            .lng = 0.174675,
+            .city = "Erith",
         }},
         .links = .{.{ .label = "Mirror", .href = "https://pkg.earth/zig" }},
     },
@@ -38,8 +38,8 @@
     .{
         .name = "zig.bcr.ist",
         .places = .{.{
-            .lat = 41.8486,
-            .lng = -87.6288,
+            .lat = 41.85,
+            .lng = -87.65,
             .city = "Chicago",
         }},
         .links = .{.{ .label = "Mirror", .href = "https://zig.bcr.ist" }},
@@ -119,9 +119,9 @@
     .{
         .name = "ziglang.freetls.fastly.net",
         .places = .{.{
-            .lat = 50.1109,
-            .lng = 8.68213,
-            .city = "Frankfurt am Main",
+            .lat = 45.5019,
+            .lng = -73.5674,
+            .city = "Montreal",
         }},
         .links = .{.{ .label = "Mirror", .href = "https://ziglang.freetls.fastly.net" }},
     },

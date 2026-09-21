@@ -41,15 +41,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
     const ready = loc_data.ready;
     const hover_only: ?usize = if (tip_v.selected != null) null else tip_v.hovered;
 
-    var parent_tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
-    var tiles: std.ArrayListUnmanaged(map.TileView) = .empty;
-    if (is_client) {
-        const z_int: u8 = map.displayTileZoom(cam.z);
-        if (z_int > 0) {
-            map.collectTilesAt(ctx.allocator, &parent_tiles, cam, size.w, size.h, z_int - 1);
-        }
-        map.collectTilesAt(ctx.allocator, &tiles, cam, size.w, size.h, z_int);
-    }
+    if (is_client) map.syncBasemap(cam, size.w, size.h);
 
     var visible_pin_indices: std.ArrayListUnmanaged(usize) = .empty;
     if (is_client and ready) {
@@ -99,32 +91,7 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
         >
             {if (is_client) (
                 <div id="map-world" class="map-world">
-                    <div class="map-tiles" aria-hidden="true">
-                        {for (parent_tiles.items) |tile| (
-                            <img
-                                key={map.fmtTileKey(ctx.allocator, tile)}
-                                class="map-tile map-tile-parent"
-                                src={map.fmtTileSrc(ctx.allocator, tile)}
-                                width="256"
-                                height="256"
-                                style={map.fmtTileStyle(ctx.allocator, tile)}
-                                draggable="false"
-                                alt=""
-                            />
-                        )}
-                        {for (tiles.items) |tile| (
-                            <img
-                                key={map.fmtTileKey(ctx.allocator, tile)}
-                                class="map-tile map-tile-main"
-                                src={map.fmtTileSrc(ctx.allocator, tile)}
-                                width="256"
-                                height="256"
-                                style={map.fmtTileStyle(ctx.allocator, tile)}
-                                draggable="false"
-                                alt=""
-                            />
-                        )}
-                    </div>
+                    <div id="maplibre-basemap" class="map-basemap" aria-hidden="true"></div>
 
                     <div class={if (ready) "map-pins is-ready" else "map-pins"} aria-hidden="true">
                         {for (visible_pin_indices.items) |i| (
@@ -504,9 +471,12 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                 </aside>
             )}
 
-            <p class="map-attrib">
-                © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OSM</a>
-                · <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>
+            <p
+                class="map-attrib"
+                onpointerdown={ctx.bind(map.onControlsPointer)}
+                onpointerup={ctx.bind(map.onControlsPointer)}
+            >
+                © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
                 · <a href="https://github.com/zig-community/user-map" target="_blank" rel="noopener noreferrer">zig-community</a>
             </p>
         </div>
