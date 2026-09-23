@@ -135,6 +135,7 @@ pub const State = struct {
     search: Search = .{},
     join: Join = .{},
     sources_open: bool = false,
+    kind_filter: ?LocationKind = null,
 };
 
 pub const DockEntry = struct {
@@ -398,10 +399,11 @@ pub fn pinInView(pin: Pin, cam: Camera, el_w: f64, el_h: f64) bool {
     return p.x >= -HIT_PX and p.x <= el_w + HIT_PX and p.y >= -HIT_PX and p.y <= el_h + HIT_PX;
 }
 
-fn hitPinIndex(sx: f64, sy: f64, cam: Camera) ?usize {
+fn hitPinIndex(sx: f64, sy: f64, cam: Camera, filter: ?LocationKind) ?usize {
     var best_i: ?usize = null;
     var best_d: f64 = HIT_PX * HIT_PX;
     for (getPins(), 0..) |pin, i| {
+        if (!pinMatchesFilter(pin, filter)) continue;
         const p = screenPos(pin, cam);
         const dx = p.x - sx;
         const dy = p.y - sy;
@@ -414,14 +416,20 @@ fn hitPinIndex(sx: f64, sy: f64, cam: Camera) ?usize {
     return best_i;
 }
 
+pub fn pinMatchesFilter(pin: Pin, filter: ?LocationKind) bool {
+    return if (filter) |k| pin.kind == k else true;
+}
+
 pub fn collectVisiblePinIndices(
     allocator: zx.Allocator,
     out: *std.ArrayListUnmanaged(usize),
     cam: Camera,
     el_w: f64,
     el_h: f64,
+    filter: ?LocationKind,
 ) void {
     for (getPins(), 0..) |pin, i| {
+        if (!pinMatchesFilter(pin, filter)) continue;
         if (!pinInView(pin, cam, el_w, el_h)) continue;
         out.append(allocator, i) catch {};
     }
@@ -529,6 +537,55 @@ pub fn kindLabel(kind: LocationKind) []const u8 {
         .event => "event",
         .mirror => "mirror",
     };
+}
+
+pub fn kindFilterLabel(kind: LocationKind) []const u8 {
+    return switch (kind) {
+        .user => "Ziguanas",
+        .event => "Events",
+        .mirror => "Mirrors",
+    };
+}
+
+pub fn kindFilterValue(kind: LocationKind) []const u8 {
+    return switch (kind) {
+        .user => "user",
+        .event => "event",
+        .mirror => "mirror",
+    };
+}
+
+pub fn dockCountClass(kind: LocationKind, filter: ?LocationKind) []const u8 {
+    const active = if (filter) |f| f == kind else false;
+    return switch (kind) {
+        .user => if (active) "map-dock-count is-active" else "map-dock-count",
+        .event => if (active) "map-dock-count is-event is-active" else "map-dock-count is-event",
+        .mirror => if (active) "map-dock-count is-mirror is-active" else "map-dock-count is-mirror",
+    };
+}
+
+pub fn onKindFilter(e: *zx.client.Event.Stateful) void {
+    e.stopPropagation();
+    e.preventDefault();
+    const state = clientState(e) orelse return;
+    var next = state.get();
+    const raw = elementAttr(e, "value") orelse e.value() orelse return;
+    const kind: LocationKind = if (std.mem.eql(u8, raw, "event"))
+        .event
+    else if (std.mem.eql(u8, raw, "mirror"))
+        .mirror
+    else
+        .user;
+    next.kind_filter = if (next.kind_filter) |cur|
+        if (cur == kind) null else kind
+    else
+        kind;
+    if (next.tip.selected) |sel| {
+        if (!pinMatchesFilter(getPins()[sel], next.kind_filter)) next.tip = .{};
+    } else if (next.tip.hovered) |hov| {
+        if (!pinMatchesFilter(getPins()[hov], next.kind_filter)) next.tip.hovered = null;
+    }
+    state.set(next);
 }
 
 fn firstPinForLocation(location_index: usize) ?usize {
@@ -662,10 +719,11 @@ fn flushCamPreview() void {
     next.drag = live_drag;
     if (cam_preview.clear_hover) next.tip.hovered = null;
     cam_preview = .{};
-    state.set(next);
-    clearWorldTransform();
     const size = stageSize();
-    syncBasemap(clampCamera(next.camera, size.w, size.h), size.w, size.h);
+    const cam = clampCamera(next.camera, size.w, size.h);
+    clearWorldTransform();
+    syncBasemap(cam, size.w, size.h);
+    state.set(next);
 }
 
 fn flushCamPreviewNow() void {
@@ -715,10 +773,12 @@ fn clearDrag(next: *State) void {
 }
 
 fn publishWithClear(state: *zx.State(State), next: State) void {
-    state.set(next);
-    clearWorldTransform();
     const size = stageSize();
-    syncBasemap(clampCamera(next.camera, size.w, size.h), size.w, size.h);
+    const cam = clampCamera(next.camera, size.w, size.h);
+    // Clear CSS pan and jumpTo+paint MapLibre in one turn before the browser paints.
+    clearWorldTransform();
+    syncBasemap(cam, size.w, size.h);
+    state.set(next);
 }
 
 fn settleLivePan(state: *zx.State(State), next: *State, d: *Drag, el_w: f64, el_h: f64) void {
@@ -864,7 +924,7 @@ pub fn onPointerMove(e: *zx.client.Event.Stateful) void {
 
     if (!d.active) {
         const focus = pointerFocus(pe.client_x, pe.client_y, size.w, size.h);
-        const hovered = hitPinIndex(focus.x, focus.y, cam);
+        const hovered = hitPinIndex(focus.x, focus.y, cam, next.kind_filter);
         if (next.tip.hovered == hovered) return;
         next.tip.hovered = hovered;
         state.set(next);
@@ -971,7 +1031,7 @@ pub fn onPointerUp(e: *zx.client.Event.Stateful) void {
     if (!d.moved) {
         const cam = clampCamera(next.camera, size.w, size.h);
         const focus = pointerFocus(pe.client_x, pe.client_y, size.w, size.h);
-        next.tip.selected = hitPinIndex(focus.x, focus.y, cam);
+        next.tip.selected = hitPinIndex(focus.x, focus.y, cam, next.kind_filter);
         next.tip.hovered = next.tip.selected;
     }
     clearDrag(&next);

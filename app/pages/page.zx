@@ -39,28 +39,39 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
         map.LocationsData{};
     const pins = loc_data.pins;
     const ready = loc_data.ready;
+    const kind_filter = state_v.kind_filter;
     const hover_only: ?usize = if (tip_v.selected != null) null else tip_v.hovered;
 
     if (is_client) map.syncBasemap(cam, size.w, size.h);
 
-    var visible_pin_indices: std.ArrayListUnmanaged(usize) = .empty;
+    var visible_all: std.ArrayListUnmanaged(usize) = .empty;
     if (is_client and ready) {
-        map.collectVisiblePinIndices(ctx.allocator, &visible_pin_indices, cam, size.w, size.h);
+        map.collectVisiblePinIndices(ctx.allocator, &visible_all, cam, size.w, size.h, null);
     }
 
-    var dock: std.ArrayListUnmanaged(map.DockEntry) = .empty;
+    var dock_all: std.ArrayListUnmanaged(map.DockEntry) = .empty;
     if (is_client and ready) {
-        map.collectDockEntries(ctx.allocator, &dock, pins, visible_pin_indices.items);
+        map.collectDockEntries(ctx.allocator, &dock_all, pins, visible_all.items);
     }
     var user_count: usize = 0;
     var event_count: usize = 0;
     var mirror_count: usize = 0;
-    for (dock.items) |entry| {
+    for (dock_all.items) |entry| {
         switch (entry.kind) {
             .user => user_count += 1,
             .event => event_count += 1,
             .mirror => mirror_count += 1,
         }
+    }
+
+    var visible_pin_indices: std.ArrayListUnmanaged(usize) = .empty;
+    if (is_client and ready) {
+        map.collectVisiblePinIndices(ctx.allocator, &visible_pin_indices, cam, size.w, size.h, kind_filter);
+    }
+
+    var dock: std.ArrayListUnmanaged(map.DockEntry) = .empty;
+    if (is_client and ready) {
+        map.collectDockEntries(ctx.allocator, &dock, pins, visible_pin_indices.items);
     }
     const dock_visible = dock.items[0..@min(dock.items.len, DOCK_DISPLAY_LIMIT)];
     const dock_hidden = dock.items.len - dock_visible.len;
@@ -436,9 +447,33 @@ pub fn UsersMap(ctx: *zx.ComponentCtx(void)) zx.Component {
                     <div class="map-dock-head">
                         <span class="map-dock-title">In view</span>
                         <span class="map-dock-counts">
-                            <span class="map-dock-count" title="Ziguanas">{user_count}</span>
-                            <span class="map-dock-count is-event" title="Events">{event_count}</span>
-                            <span class="map-dock-count is-mirror" title="Mirrors">{mirror_count}</span>
+                            <button
+                                type="button"
+                                class={map.dockCountClass(.user, kind_filter)}
+                                value={map.kindFilterValue(.user)}
+                                data-tip={map.kindFilterLabel(.user)}
+                                aria-label={map.kindFilterLabel(.user)}
+                                aria-pressed={if (kind_filter == .user) "true" else "false"}
+                                onclick={ctx.bind(map.onKindFilter)}
+                            >{user_count}</button>
+                            <button
+                                type="button"
+                                class={map.dockCountClass(.event, kind_filter)}
+                                value={map.kindFilterValue(.event)}
+                                data-tip={map.kindFilterLabel(.event)}
+                                aria-label={map.kindFilterLabel(.event)}
+                                aria-pressed={if (kind_filter == .event) "true" else "false"}
+                                onclick={ctx.bind(map.onKindFilter)}
+                            >{event_count}</button>
+                            <button
+                                type="button"
+                                class={map.dockCountClass(.mirror, kind_filter)}
+                                value={map.kindFilterValue(.mirror)}
+                                data-tip={map.kindFilterLabel(.mirror)}
+                                aria-label={map.kindFilterLabel(.mirror)}
+                                aria-pressed={if (kind_filter == .mirror) "true" else "false"}
+                                onclick={ctx.bind(map.onKindFilter)}
+                            >{mirror_count}</button>
                         </span>
                     </div>
                     {if (dock.items.len == 0) (

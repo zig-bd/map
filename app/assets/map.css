@@ -848,17 +848,55 @@ select.map-join-input {
 }
 
 .map-dock-count {
+    position: relative;
     min-width: 1.55rem;
+    margin: 0;
     padding: 0.12rem 0.42rem;
+    border: 1px solid transparent;
     border-radius: 999px;
     background: var(--map-accent);
+    font: inherit;
     font-size: 0.78rem;
     font-variant-numeric: tabular-nums;
     font-weight: 700;
     line-height: 1.2;
     text-align: center;
     color: #141820;
-    cursor: default;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.map-dock-count::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 0.35rem);
+    z-index: 6;
+    padding: 0.2rem 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    background: rgba(8, 12, 22, 0.92);
+    color: #f2f5fa;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-50%) translateY(2px);
+    transition: none;
+}
+
+.map-dock-count:hover::after,
+.map-dock-count:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.map-dock-count:hover,
+.map-dock-count:focus-visible {
+    outline: none;
+    filter: brightness(1.08);
 }
 
 .map-dock-count.is-event {
@@ -869,6 +907,11 @@ select.map-join-input {
 .map-dock-count.is-mirror {
     background: var(--map-mirror);
     color: #1a1c1e;
+}
+
+.map-dock-count.is-active {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
 }
 
 .map-dock-list {

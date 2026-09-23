@@ -14,6 +14,14 @@
 
     sync: function (lng, lat, z) {
       this.pending = { lng: lng, lat: lat, z: z };
+      if (this.map) {
+        if (this.raf) {
+          cancelAnimationFrame(this.raf);
+          this.raf = 0;
+        }
+        this.flush();
+        return;
+      }
       if (this.raf) return;
       var self = this;
       this.raf = requestAnimationFrame(function () {
@@ -69,10 +77,18 @@
         return;
       }
 
-      this.map.resize();
       if (this.lastKey === key) return;
       this.lastKey = key;
       this.map.jumpTo({ center: [p.lng, p.lat], zoom: p.z });
+      if (typeof this.map._render === "function") {
+        try {
+          this.map._render(true);
+        } catch (_) {
+          this.map.triggerRepaint();
+        }
+      } else {
+        this.map.triggerRepaint();
+      }
     },
 
     reschedule: function () {
