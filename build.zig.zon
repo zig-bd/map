@@ -2,15 +2,15 @@
     .name = .zig_world_map,
     .version = "0.1.0",
     .fingerprint = 0x12cfb3f84045cdd,
-    .minimum_zig_version = "0.17.0-dev.2248+3f6a02acd",
+    .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .zig_branding = .{
             .url = "git+https://codeberg.org/ziglang/logo.git#2f6e01e9dc0410d6815c3e58be6d437bf26f0b4e",
             .hash = "N-V-__8AAKsnBQC52IY79HuB1adcveDcx3eh0rcAHrYTLF-y",
         },
         .ziex = .{
-            .url = "git+https://github.com/ziex-dev/ziex#38782b937bdcaf98f590864092dcd14295715c15",
-            .hash = "ziex-0.1.0-dev-Z3YcvXzCmwHfKL-gJHRrrRFdHT8auVyI32siy27C3RDQ",
+            .url = "git+https://github.com/ziex-dev/ziex?ref=v0.1.0#5fe20d2627c89d0fedef1c374b77fc8c06ee1ec2",
+            .hash = "ziex-0.1.0-Z3YcvVG0nQGB_er2utueacBsixc7nx7nxneiVVke8MTT",
         },
     },
     .paths = .{

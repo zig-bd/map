@@ -196,27 +196,53 @@ fn fetchPlaces() void {
     if (!zx.platform.isClient() or places_fetch_started or places.get().places.len > 0) return;
     places_fetch_started = true;
 
-    var response = (zx.fetch(.blocking, zx.allocator, "/places.json", .{}) catch return) orelse return;
-    defer response.deinit();
-    if (!response.ok()) return;
-    const text = response.text() catch return;
-    const loaded = zx.util.zxon.parse(Places, zx.allocator, text, .{}) catch return;
-    // Assign in-place so this render sees the data without an extra scheduleRender.
-    places.value = loaded;
+    var client: zx.http.Client = .{ .io = zx.Io.default(), .allocator = zx.allocator };
+    client.fetchThen(.{ .url = "/places.json" }, {}, onPlacesFetch);
+}
+
+fn onPlacesFetch(_: void, result: zx.http.Client.Error!zx.http.Client.Result) void {
+    const response = result catch {
+        places_fetch_started = false;
+        return;
+    };
+    if (response.status.class() != .success) {
+        places_fetch_started = false;
+        return;
+    }
+    const loaded = zx.util.zxon.parse(Places, zx.allocator, response.body, .{}) catch {
+        places_fetch_started = false;
+        return;
+    };
+    places.set(loaded);
 }
 
 fn fetchLocations() void {
     if (!zx.platform.isClient() or locations_fetch_started or locations.get().ready) return;
     locations_fetch_started = true;
 
-    var response = (zx.fetch(.blocking, zx.allocator, "/locations.json", .{}) catch return) orelse return;
-    defer response.deinit();
-    if (!response.ok()) return;
-    const text = response.text() catch return;
-    var data = zx.util.zxon.parse(LocationsData, zx.allocator, text, .{}) catch return;
-    data.pins = allocPins(data) catch return;
+    var client: zx.http.Client = .{ .io = zx.Io.default(), .allocator = zx.allocator };
+    client.fetchThen(.{ .url = "/locations.json" }, {}, onLocationsFetch);
+}
+
+fn onLocationsFetch(_: void, result: zx.http.Client.Error!zx.http.Client.Result) void {
+    const response = result catch {
+        locations_fetch_started = false;
+        return;
+    };
+    if (response.status.class() != .success) {
+        locations_fetch_started = false;
+        return;
+    }
+    var data = zx.util.zxon.parse(LocationsData, zx.allocator, response.body, .{}) catch {
+        locations_fetch_started = false;
+        return;
+    };
+    data.pins = allocPins(data) catch {
+        locations_fetch_started = false;
+        return;
+    };
     data.ready = true;
-    locations.value = data;
+    locations.set(data);
 }
 
 fn allocPins(data: LocationsData) ![]const Pin {

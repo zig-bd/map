@@ -36,7 +36,7 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: 0.17.0-dev.2248+3f6a02acd
+          version: 0.17.0
           use-tool-cache: true
 
       - name: Fetch location sources
@@ -65,14 +65,14 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: 0.17.0-dev.2248+3f6a02acd
+          version: 0.17.0
           use-tool-cache: true
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Build Site
-        run: zig build zx -- export --build-args=--release=fast
+        run: zig build zx -- build --static --release=fast
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

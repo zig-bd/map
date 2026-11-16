@@ -24,8 +24,12 @@ pub fn GET(ctx: zx.RouteContext) !void {
 fn loadZon(comptime T: type, ctx: zx.RouteContext, path: []const u8) !T {
     const raw = try std.Io.Dir.cwd().readFileAlloc(ctx.io, path, ctx.arena, .limited(64 * 1024 * 1024));
     const source = try ctx.arena.dupeSentinel(u8, raw, 0);
-    return std.zon.parse.fromSliceAlloc(T, ctx.arena, source, null, .{
+    var diagnostics: std.zon.parse.Diagnostics = undefined;
+    return std.zon.parse.fromSlice(T, .{
+        .gpa = ctx.arena,
+        .arena = ctx.arena,
+        .source = source,
+        .diagnostics = &diagnostics,
         .ignore_unknown_fields = true,
-        .free_on_error = false,
     });
 }

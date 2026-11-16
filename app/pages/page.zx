@@ -7,11 +7,11 @@ const map = @import("map.zig");
 const DOCK_DISPLAY_LIMIT: usize = 100;
 
 pub fn Page(ctx: zx.PageContext) !zx.Component {
-    const rand_id = try ctx.fmt("{x}", .{randInt(zx.io(), u32)});
+    const rand_id = try ctx.fmt("{x}", .{randInt(zx.Io.default(), u32)});
     return (
         <main class="map-root" @allocator={ctx.arena}>
             <link rel="stylesheet" href=`/assets/map.css?v={rand_id}` />
-            <UsersMap @rendering={.client} />
+            <UsersMap @client />
         </main>
     );
 }
